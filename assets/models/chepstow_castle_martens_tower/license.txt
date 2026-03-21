@@ -1,0 +1,11 @@
+Model Information:
+* title:	Chepstow Castle: Marten's Tower
+* source:	https://sketchfab.com/3d-models/chepstow-castle-martens-tower-1a64ebded0694e2aaf9f2cec3a2b57d2
+* author:	9of9 (https://sketchfab.com/9of9)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Chepstow Castle: Marten's Tower" (https://sketchfab.com/3d-models/chepstow-castle-martens-tower-1a64ebded0694e2aaf9f2cec3a2b57d2) by 9of9 (https://sketchfab.com/9of9) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
