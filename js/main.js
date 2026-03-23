@@ -28,21 +28,29 @@ const hud = document.createElement("div");
 hud.style.position = "fixed";
 hud.style.top = "12px";
 hud.style.right = "12px";
-hud.style.width = "260px";
+hud.style.width = "270px";
 hud.style.padding = "10px 12px";
 hud.style.borderRadius = "12px";
-hud.style.background = "rgba(10,16,30,0.82)";
+hud.style.background = "rgba(10,16,30,0.85)";
 hud.style.color = "#fff";
 hud.style.fontFamily = "Arial, sans-serif";
 hud.style.fontSize = "13px";
 hud.style.zIndex = "999";
 hud.innerHTML = `
   <div style="font-weight:700;margin-bottom:8px;">Estado del combate</div>
+
   <div>Vida jugador</div>
-  <div style="height:12px;background:#2b3550;border-radius:999px;overflow:hidden;margin:6px 0 10px;">
+  <div style="height:12px;background:#2b3550;border-radius:999px;overflow:hidden;margin:6px 0 6px;">
     <div id="playerLifeBar" style="height:100%;width:100%;background:#53d769;"></div>
   </div>
   <div id="playerLifeText">100 / 100</div>
+
+  <div style="margin-top:10px;">Stamina</div>
+  <div style="height:12px;background:#2b3550;border-radius:999px;overflow:hidden;margin:6px 0 6px;">
+    <div id="playerStaminaBar" style="height:100%;width:100%;background:#46c2ff;"></div>
+  </div>
+  <div id="playerStaminaText">100 / 100</div>
+
   <div id="enemyCounter" style="margin-top:10px;">Enemigos vivos: 0</div>
   <div id="lockOnText" style="margin-top:8px;opacity:.9;">Lock-on: no</div>
 `;
@@ -50,13 +58,20 @@ document.body.appendChild(hud);
 
 const $playerLifeBar = document.getElementById("playerLifeBar");
 const $playerLifeText = document.getElementById("playerLifeText");
+const $playerStaminaBar = document.getElementById("playerStaminaBar");
+const $playerStaminaText = document.getElementById("playerStaminaText");
 const $enemyCounter = document.getElementById("enemyCounter");
 const $lockOnText = document.getElementById("lockOnText");
 
 function updatePlayerHUD() {
-  const pct = Math.max(0, (player.life / player.maxLife) * 100);
-  $playerLifeBar.style.width = `${pct}%`;
+  const lifePct = Math.max(0, (player.life / player.maxLife) * 100);
+  const staminaPct = Math.max(0, (player.stamina / player.maxStamina) * 100);
+
+  $playerLifeBar.style.width = `${lifePct}%`;
   $playerLifeText.textContent = `${Math.ceil(player.life)} / ${player.maxLife}`;
+
+  $playerStaminaBar.style.width = `${staminaPct}%`;
+  $playerStaminaText.textContent = `${Math.ceil(player.stamina)} / ${player.maxStamina}`;
 }
 
 function updateEnemyHUD() {
@@ -81,15 +96,15 @@ const ANIMS = [
   { key: "run", name: "Run", file: "assets/models/Unarmed Run Forward.fbx", type: "run" },
   { key: "jump", name: "Jump", file: "assets/models/Jumping Up.fbx", type: "jump" },
 
-  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.2, hitStart: 0.18, hitEnd: 0.52 },
-  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 1.9, hitStart: 0.16, hitEnd: 0.48 },
-  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 1.6, hitStart: 0.08, hitEnd: 0.30 },
-  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 1.8, hitStart: 0.12, hitEnd: 0.42 },
-  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 1.8, hitStart: 0.14, hitEnd: 0.44 },
-  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.1, hitStart: 0.20, hitEnd: 0.58 },
+  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.2, hitStart: 0.18, hitEnd: 0.52, staminaCost: 10 },
+  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 1.9, hitStart: 0.16, hitEnd: 0.48, staminaCost: 9 },
+  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 1.6, hitStart: 0.08, hitEnd: 0.30, staminaCost: 8 },
+  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 1.8, hitStart: 0.12, hitEnd: 0.42, staminaCost: 9 },
+  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 1.8, hitStart: 0.14, hitEnd: 0.44, staminaCost: 9 },
+  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.1, hitStart: 0.20, hitEnd: 0.58, staminaCost: 12 },
 
   { key: "7", name: "Block", file: "assets/models/Sword And Shield Crouch Block Idle.fbx", type: "blockHold" },
-  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 1.5, hitStart: 0.08, hitEnd: 0.28 }
+  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 1.5, hitStart: 0.08, hitEnd: 0.28, staminaCost: 7 }
 ];
 
 const IDLE_KEY = "idle";
@@ -106,24 +121,27 @@ const PLAYER_MODEL_VISUAL_HEIGHT = 1.8;
 
 const GRAVITY = 30;
 const WALK_SPEED = 4.8;
-const RUN_SPEED = 8.0;
+const RUN_SPEED = 8.6;
 const ATTACK_MOVE_SPEED = 2.2;
 const BLOCK_MOVE_SPEED = 1.25;
 const JUMP_SPEED = 11;
 
 const CAMERA_HEIGHT = 1.25;
-const CAMERA_DISTANCE = 4.6;
-const CAMERA_MIN_DISTANCE = 1.15;
+const CAMERA_DISTANCE = 4.9;
+const CAMERA_MIN_DISTANCE = 1.1;
 const CAMERA_LERP = 0.12;
 const TARGET_LERP = 0.18;
-const CAMERA_WALL_OFFSET = 0.2;
+const CAMERA_WALL_OFFSET = 0.22;
+const CAMERA_LOCK_HEIGHT = 1.7;
+const CAMERA_NORMAL_HEIGHT = 1.8;
+const CAMERA_LOCK_DISTANCE = 4.3;
 
 const FALL_LIMIT_Y = -20;
 const STEP_HEIGHT = 0.25;
 const PLAYER_GROUND_EPS = 0.08;
 
 const ENEMY_COUNT = 6;
-const ENEMY_SPEED = 2.2;
+const ENEMY_SPEED = 2.25;
 const ENEMY_ATTACK_RANGE = 1.25;
 const ENEMY_DETECT_RANGE = 16;
 const ENEMY_CONTACT_DAMAGE = 10;
@@ -263,7 +281,15 @@ let lockedEnemy = null;
 const player = {
   maxLife: 100,
   life: 100,
-  invulTime: 0
+  invulTime: 0,
+
+  maxStamina: 100,
+  stamina: 100,
+  sprintDrainPerSec: 26,
+  staminaRegenPerSec: 18,
+  staminaRegenDelay: 0.8,
+  staminaCooldown: 0,
+  exhausted: false
 };
 
 // =====================================================
@@ -315,7 +341,7 @@ function normalizeCharacter(obj) {
 function updateStatusLabel(label) {
   setStatus(`
     Actual: <b>${label}</b><br>
-    WASD mover · Shift correr · Espacio saltar<br>
+    WASD mover · Shift sprint · Espacio saltar<br>
     1-6 ataques · 7 cubrirse · F ataque rápido · R lock-on<br>
     Mouse cámara · Q/E zoom · Flechas cámara · N/M niebla · Z/X luz
   `);
@@ -346,6 +372,19 @@ function consumePressed(key) {
     return true;
   }
   return false;
+}
+
+function spendStamina(amount) {
+  if (player.stamina < amount) return false;
+  player.stamina = Math.max(0, player.stamina - amount);
+  player.staminaCooldown = player.staminaRegenDelay;
+  if (player.stamina <= 0) player.exhausted = true;
+  updatePlayerHUD();
+  return true;
+}
+
+function hasMovementInput() {
+  return !!(keys["w"] || keys["a"] || keys["s"] || keys["d"]);
 }
 
 // =====================================================
@@ -410,6 +449,7 @@ function beginAttack(meta) {
     range: meta.range ?? 1.6,
     hitStart: meta.hitStart ?? 0.12,
     hitEnd: meta.hitEnd ?? 0.34,
+    staminaCost: meta.staminaCost ?? 0,
     hasHit: false
   };
 }
@@ -544,7 +584,10 @@ function buildButtons() {
       if (actionLocked) {
         if (canQueueCombo()) queuedActionKey = key;
       } else {
-        playAnimation(key);
+        const meta = ANIMS.find((a) => a.key === key);
+        if (!meta || spendStamina(meta.staminaCost ?? 0)) {
+          playAnimation(key);
+        }
       }
     });
     $buttons.appendChild(btn);
@@ -601,14 +644,26 @@ function getSideVector() {
   return new THREE.Vector3().crossVectors(forward, worldUp).normalize();
 }
 
+function isSprinting() {
+  const wantsSprint = keys["shift"] || keys["shiftleft"] || keys["shiftright"];
+  const canSprint =
+    wantsSprint &&
+    hasMovementInput() &&
+    playerOnFloor &&
+    !actionLocked &&
+    !holdBlockRequested &&
+    !player.exhausted &&
+    player.stamina > 0.5;
+
+  return !!canSprint;
+}
+
 function getMoveSpeed() {
   if (currentActionKey === BLOCK_KEY) return BLOCK_MOVE_SPEED;
   if (ATTACK_KEYS.includes(currentActionKey) || currentActionKey === QUICK_KEY) {
     return ATTACK_MOVE_SPEED;
   }
-  return (keys["shift"] || keys["shiftleft"] || keys["shiftright"])
-    ? RUN_SPEED
-    : WALK_SPEED;
+  return isSprinting() ? RUN_SPEED : WALK_SPEED;
 }
 
 function movePlayerHorizontal(deltaTime) {
@@ -776,6 +831,9 @@ function damagePlayer(amount) {
 
   if (player.life <= 0) {
     player.life = player.maxLife;
+    player.stamina = player.maxStamina;
+    player.exhausted = false;
+    player.staminaCooldown = 0;
     updatePlayerHUD();
 
     playerCollider.start.set(0, PLAYER_RADIUS + 0.05, 0);
@@ -974,15 +1032,49 @@ function updateEnemies(dt) {
 // =====================================================
 // PLAYER UPDATE
 // =====================================================
+function updateStamina(dt) {
+  const sprinting = isSprinting();
+
+  if (sprinting) {
+    player.stamina = Math.max(0, player.stamina - player.sprintDrainPerSec * dt);
+    player.staminaCooldown = player.staminaRegenDelay;
+
+    if (player.stamina <= 0) {
+      player.stamina = 0;
+      player.exhausted = true;
+    }
+  } else {
+    player.staminaCooldown = Math.max(0, player.staminaCooldown - dt);
+
+    if (player.staminaCooldown <= 0) {
+      player.stamina = Math.min(player.maxStamina, player.stamina + player.staminaRegenPerSec * dt);
+      if (player.stamina > player.maxStamina * 0.25) {
+        player.exhausted = false;
+      }
+    }
+  }
+
+  updatePlayerHUD();
+}
+
+function tryPlayAttackByKey(key) {
+  const meta = ANIMS.find((a) => a.key === key);
+  if (!meta) return;
+
+  if (actionLocked) {
+    if (canQueueCombo()) queuedActionKey = key;
+    return;
+  }
+
+  if (!spendStamina(meta.staminaCost ?? 0)) return;
+  playAnimation(key);
+}
+
 function handleAttackInputs() {
   for (const atkKey of ATTACK_KEYS) {
     if (keys[atkKey]) {
       if (playerOnFloor && currentActionKey !== atkKey) {
-        if (actionLocked) {
-          if (canQueueCombo()) queuedActionKey = atkKey;
-        } else {
-          playAnimation(atkKey);
-        }
+        tryPlayAttackByKey(atkKey);
       }
       keys[atkKey] = false;
     }
@@ -990,11 +1082,7 @@ function handleAttackInputs() {
 
   if (keys["f"]) {
     if (playerOnFloor && currentActionKey !== QUICK_KEY) {
-      if (actionLocked) {
-        if (canQueueCombo()) queuedActionKey = QUICK_KEY;
-      } else {
-        playAnimation(QUICK_KEY);
-      }
+      tryPlayAttackByKey(QUICK_KEY);
     }
     keys["f"] = false;
   }
@@ -1027,6 +1115,7 @@ function updatePlayer(deltaTime) {
   }
 
   player.invulTime = Math.max(0, player.invulTime - deltaTime);
+  updateStamina(deltaTime);
 
   if (!playerOnFloor) {
     playerVelocity.y -= GRAVITY * deltaTime;
@@ -1091,9 +1180,9 @@ function updatePlayer(deltaTime) {
     return;
   }
 
-  const running = !!(keys["shift"] || keys["shiftleft"] || keys["shiftright"]);
+  const sprinting = isSprinting();
 
-  if (wasMoving && running) {
+  if (wasMoving && sprinting) {
     playAnimation(RUN_KEY);
   } else if (wasMoving) {
     playAnimation(WALK_KEY);
@@ -1103,7 +1192,7 @@ function updatePlayer(deltaTime) {
 }
 
 // =====================================================
-// CÁMARA
+// CÁMARA AAA
 // =====================================================
 function resolveCameraCollision(origin, desired) {
   const dir = desired.clone().sub(origin);
@@ -1133,30 +1222,29 @@ function updateThirdPersonCamera() {
   const charPos = character.position.clone();
 
   let forward;
+  let desiredDistance = CAMERA_DISTANCE;
+  let desiredHeight = CAMERA_NORMAL_HEIGHT;
+
   if (lockedEnemy && !lockedEnemy.dead) {
     forward = lockedEnemy.mesh.position.clone().sub(charPos);
     forward.y = 0;
     if (forward.lengthSq() < 0.0001) forward.set(0, 0, 1);
     else forward.normalize();
+
+    desiredDistance = CAMERA_LOCK_DISTANCE;
+    desiredHeight = CAMERA_LOCK_HEIGHT;
+
+    const mid = charPos.clone().lerp(lockedEnemy.mesh.position, 0.38);
+    cameraTarget.set(mid.x, charPos.y + CAMERA_HEIGHT, mid.z);
   } else {
     forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
-  }
-
-  if (lockedEnemy && !lockedEnemy.dead) {
-    const targetMix = lockedEnemy.mesh.position.clone().lerp(charPos, 0.55);
-    cameraTarget.set(targetMix.x, charPos.y + CAMERA_HEIGHT, targetMix.z);
-  } else {
-    cameraTarget.set(
-      charPos.x,
-      charPos.y + CAMERA_HEIGHT,
-      charPos.z
-    );
+    cameraTarget.set(charPos.x, charPos.y + CAMERA_HEIGHT, charPos.z);
   }
 
   cameraDesired
     .copy(cameraTarget)
-    .addScaledVector(forward, -CAMERA_DISTANCE)
-    .add(new THREE.Vector3(0, 1.8, 0));
+    .addScaledVector(forward, -desiredDistance)
+    .add(new THREE.Vector3(0, desiredHeight, 0));
 
   const safeDesired = resolveCameraCollision(cameraTarget, cameraDesired);
 
