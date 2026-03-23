@@ -32,7 +32,7 @@ const hud = document.createElement("div");
 hud.style.position = "fixed";
 hud.style.top = "12px";
 hud.style.right = "12px";
-hud.style.width = "290px";
+hud.style.width = "300px";
 hud.style.padding = "12px 14px";
 hud.style.borderRadius = "14px";
 hud.style.background = "rgba(10,16,30,0.86)";
@@ -113,6 +113,25 @@ victoryBanner.style.zIndex = "1002";
 victoryBanner.textContent = "VICTORIA";
 document.body.appendChild(victoryBanner);
 
+const centerMessage = document.createElement("div");
+centerMessage.style.position = "fixed";
+centerMessage.style.left = "50%";
+centerMessage.style.top = "30%";
+centerMessage.style.transform = "translate(-50%, -50%) scale(0.9)";
+centerMessage.style.padding = "14px 24px";
+centerMessage.style.borderRadius = "16px";
+centerMessage.style.background = "rgba(12,18,34,.86)";
+centerMessage.style.color = "#fff";
+centerMessage.style.fontFamily = "Arial, sans-serif";
+centerMessage.style.fontWeight = "900";
+centerMessage.style.fontSize = "30px";
+centerMessage.style.letterSpacing = "1px";
+centerMessage.style.opacity = "0";
+centerMessage.style.pointerEvents = "none";
+centerMessage.style.zIndex = "1003";
+centerMessage.style.transition = "opacity .18s ease, transform .18s ease";
+document.body.appendChild(centerMessage);
+
 const $playerLifeBar = document.getElementById("playerLifeBar");
 const $playerLifeText = document.getElementById("playerLifeText");
 const $playerStaminaBar = document.getElementById("playerStaminaBar");
@@ -137,15 +156,15 @@ const ANIMS = [
   { key: "run", name: "Run", file: "assets/models/Unarmed Run Forward.fbx", type: "run" },
   { key: "jump", name: "Jump", file: "assets/models/Jumping Up.fbx", type: "jump" },
 
-  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.55, hitStart: 0.14, hitEnd: 0.60, staminaCost: 10, coneDeg: 95, knockback: 4.1 },
-  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 2.35, hitStart: 0.12, hitEnd: 0.56, staminaCost: 9, coneDeg: 92, knockback: 3.8 },
-  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 2.1, hitStart: 0.06, hitEnd: 0.34, staminaCost: 8, coneDeg: 110, knockback: 3.2 },
-  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 2.25, hitStart: 0.08, hitEnd: 0.47, staminaCost: 9, coneDeg: 105, knockback: 3.6 },
-  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 2.2, hitStart: 0.11, hitEnd: 0.49, staminaCost: 9, coneDeg: 105, knockback: 3.4 },
-  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.65, hitStart: 0.17, hitEnd: 0.66, staminaCost: 12, coneDeg: 88, knockback: 5.0 },
+  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.65, hitStart: 0.13, hitEnd: 0.64, staminaCost: 10, coneDeg: 100, knockback: 4.2, trailSize: 1.05 },
+  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 2.45, hitStart: 0.11, hitEnd: 0.58, staminaCost: 9, coneDeg: 96, knockback: 3.85, trailSize: 0.95 },
+  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 2.2, hitStart: 0.04, hitEnd: 0.36, staminaCost: 8, coneDeg: 120, knockback: 3.25, trailSize: 0.9 },
+  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 2.35, hitStart: 0.07, hitEnd: 0.5, staminaCost: 9, coneDeg: 110, knockback: 3.65, trailSize: 0.95 },
+  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 2.3, hitStart: 0.1, hitEnd: 0.52, staminaCost: 9, coneDeg: 108, knockback: 3.45, trailSize: 0.95 },
+  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.8, hitStart: 0.16, hitEnd: 0.68, staminaCost: 12, coneDeg: 92, knockback: 5.0, trailSize: 1.12 },
 
   { key: "7", name: "Block", file: "assets/models/Sword And Shield Crouch Block Idle.fbx", type: "blockHold" },
-  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 2.0, hitStart: 0.05, hitEnd: 0.33, staminaCost: 7, coneDeg: 120, knockback: 3.0 }
+  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 2.15, hitStart: 0.04, hitEnd: 0.34, staminaCost: 7, coneDeg: 130, knockback: 3.0, trailSize: 0.82 }
 ];
 
 const IDLE_KEY = "idle";
@@ -161,9 +180,9 @@ const PLAYER_RADIUS = 0.35;
 const PLAYER_MODEL_VISUAL_HEIGHT = 1.8;
 
 const GRAVITY = 30;
-const WALK_SPEED = 4.9;
-const RUN_SPEED = 8.25;
-const ATTACK_MOVE_SPEED = 2.25;
+const WALK_SPEED = 4.95;
+const RUN_SPEED = 8.1;
+const ATTACK_MOVE_SPEED = 2.35;
 const BLOCK_MOVE_SPEED = 1.2;
 const JUMP_SPEED = 11;
 
@@ -176,13 +195,14 @@ const CAMERA_WALL_OFFSET = 0.22;
 const CAMERA_LOCK_HEIGHT = 1.7;
 const CAMERA_NORMAL_HEIGHT = 1.8;
 const CAMERA_LOCK_DISTANCE = 4.15;
+const CAMERA_COMBAT_DISTANCE = 4.35;
 
 const FALL_LIMIT_Y = -20;
-const STEP_HEIGHT = 0.25;
+const STEP_HEIGHT = 0.28;
 const PLAYER_GROUND_EPS = 0.08;
 
 const ENEMY_COUNT = 6;
-const ENEMY_SPEED = 1.9;
+const ENEMY_SPEED = 1.95;
 const ENEMY_ATTACK_RANGE = 1.35;
 const ENEMY_DETECT_RANGE = 16;
 const ENEMY_CONTACT_DAMAGE = 10;
@@ -196,9 +216,10 @@ const ENEMY_FALL_LIMIT_Y = -20;
 
 const LOCK_ON_RANGE = 18;
 
-const PARTICLE_MAX_LIFE = 0.42;
+const PARTICLE_MAX_LIFE = 0.5;
 const COMBO_RESET_TIME = 1.5;
 const CAMERA_SHAKE_DAMP = 6.0;
+const TIME_SCALE_RETURN_SPEED = 10.0;
 
 // =====================================================
 // THREE SETUP
@@ -326,6 +347,8 @@ let lockedEnemy = null;
 let combatWon = false;
 
 const particles = [];
+const slashTrails = [];
+
 const particleGeo = new THREE.BufferGeometry();
 particleGeo.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0], 3));
 const particleMat = new THREE.PointsMaterial({
@@ -340,6 +363,11 @@ let comboTimer = 0;
 
 let hitFlashTimer = 0;
 let cameraShake = 0;
+let centerMessageTimer = 0;
+
+let globalTimeScale = 1;
+let slowMotionTimer = 0;
+let requestedCombatZoom = CAMERA_DISTANCE;
 
 const enemyAssets = {
   loaded: false,
@@ -475,7 +503,12 @@ function spendStamina(amount) {
   if (player.stamina < amount) return false;
   player.stamina = Math.max(0, player.stamina - amount);
   player.staminaCooldown = player.staminaRegenDelay;
-  if (player.stamina <= 0) player.exhausted = true;
+
+  if (player.stamina <= 0) {
+    player.exhausted = true;
+    showCenterMessage("SIN STAMINA", 0.7);
+  }
+
   updatePlayerHUD();
   return true;
 }
@@ -509,6 +542,8 @@ function updateEnemyHUD() {
     combatWon = true;
     victoryBanner.style.opacity = "1";
     victoryBanner.style.transform = "translate(-50%, -50%) scale(1)";
+    triggerCameraShake(0.18);
+    slowMotion(0.12, 0.42);
   }
 }
 
@@ -555,32 +590,90 @@ function updateEffects(dt) {
   }
 
   cameraShake = Math.max(0, cameraShake - dt * CAMERA_SHAKE_DAMP);
+
+  if (centerMessageTimer > 0) {
+    centerMessageTimer -= dt;
+    if (centerMessageTimer <= 0) {
+      centerMessage.style.opacity = "0";
+      centerMessage.style.transform = "translate(-50%, -50%) scale(0.9)";
+    }
+  }
+}
+
+function showCenterMessage(text, duration = 0.45) {
+  centerMessage.textContent = text;
+  centerMessageTimer = duration;
+  centerMessage.style.opacity = "1";
+  centerMessage.style.transform = "translate(-50%, -50%) scale(1)";
+}
+
+function slowMotion(duration = 0.08, scale = 0.45) {
+  slowMotionTimer = Math.max(slowMotionTimer, duration);
+  globalTimeScale = Math.min(globalTimeScale, scale);
+}
+
+function updateTimeScale(dtUnscaled) {
+  if (slowMotionTimer > 0) {
+    slowMotionTimer -= dtUnscaled;
+    if (slowMotionTimer <= 0) slowMotionTimer = 0;
+  }
+
+  if (slowMotionTimer <= 0) {
+    globalTimeScale = THREE.MathUtils.lerp(globalTimeScale, 1, dtUnscaled * TIME_SCALE_RETURN_SPEED);
+    if (Math.abs(globalTimeScale - 1) < 0.01) globalTimeScale = 1;
+  }
 }
 
 // =====================================================
 // PARTICLES
 // =====================================================
-function spawnImpactParticles(position, dir, count = 14) {
+function spawnImpactParticles(position, dir, count = 16) {
   for (let i = 0; i < count; i++) {
     const vel = new THREE.Vector3(
-      (Math.random() - 0.5) * 3.2 + dir.x * 1.2,
-      Math.random() * 2.6 + 0.4,
-      (Math.random() - 0.5) * 3.2 + dir.z * 1.2
+      (Math.random() - 0.5) * 4.4 + dir.x * 1.65,
+      Math.random() * 3.8 + 0.9,
+      (Math.random() - 0.5) * 4.4 + dir.z * 1.65
     );
 
     const sprite = new THREE.Points(particleGeo, particleMat.clone());
     sprite.position.copy(position);
-    sprite.material.size = 0.08 + Math.random() * 0.12;
+    sprite.material.size = 0.07 + Math.random() * 0.14;
     sprite.material.opacity = 1;
     scene.add(sprite);
 
     particles.push({
       mesh: sprite,
       velocity: vel,
-      life: PARTICLE_MAX_LIFE * (0.8 + Math.random() * 0.4),
-      maxLife: PARTICLE_MAX_LIFE
+      life: PARTICLE_MAX_LIFE * (0.85 + Math.random() * 0.5),
+      maxLife: PARTICLE_MAX_LIFE * (0.85 + Math.random() * 0.5),
+      bounce: 0.22 + Math.random() * 0.14
     });
   }
+}
+
+function spawnSlashTrail(position, forward, size = 1) {
+  const material = new THREE.SpriteMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.42,
+    depthWrite: false
+  });
+
+  const sprite = new THREE.Sprite(material);
+  sprite.position.copy(position);
+  sprite.scale.set(1.45 * size, 0.55 * size, 1);
+  scene.add(sprite);
+
+  const side = new THREE.Vector3(-forward.z, 0, forward.x).normalize();
+  const vel = forward.clone().multiplyScalar(2.4).addScaledVector(side, (Math.random() - 0.5) * 3.2);
+  vel.y += 0.2 + Math.random() * 0.4;
+
+  slashTrails.push({
+    mesh: sprite,
+    velocity: vel,
+    life: 0.12,
+    maxLife: 0.12
+  });
 }
 
 function updateParticles(dt) {
@@ -595,12 +688,38 @@ function updateParticles(dt) {
       continue;
     }
 
-    p.velocity.y -= 8.5 * dt;
+    p.velocity.y -= 18 * dt;
+    p.velocity.multiplyScalar(0.96);
     p.mesh.position.addScaledVector(p.velocity, dt);
 
+    if (p.mesh.position.y <= 0.05) {
+      p.mesh.position.y = 0.05;
+      if (p.velocity.y < 0) p.velocity.y *= -p.bounce;
+      p.velocity.x *= 0.82;
+      p.velocity.z *= 0.82;
+    }
+
     const alpha = clamp(p.life / p.maxLife, 0, 1);
-    p.mesh.material.opacity = alpha;
-    p.mesh.scale.setScalar(0.7 + (1 - alpha) * 0.8);
+    p.mesh.material.opacity = alpha * alpha;
+    p.mesh.scale.setScalar(0.72 + (1 - alpha) * 1.0);
+  }
+
+  for (let i = slashTrails.length - 1; i >= 0; i--) {
+    const t = slashTrails[i];
+    t.life -= dt;
+
+    if (t.life <= 0) {
+      scene.remove(t.mesh);
+      t.mesh.material.dispose();
+      slashTrails.splice(i, 1);
+      continue;
+    }
+
+    t.mesh.position.addScaledVector(t.velocity, dt);
+    t.mesh.scale.x *= 1.015;
+    t.mesh.scale.y *= 0.985;
+    const a = clamp(t.life / t.maxLife, 0, 1);
+    t.mesh.material.opacity = a * 0.4;
   }
 }
 
@@ -669,7 +788,9 @@ function beginAttack(meta) {
     staminaCost: meta.staminaCost ?? 0,
     coneDeg: meta.coneDeg ?? 95,
     knockback: meta.knockback ?? 3.5,
-    hitIds: new Set()
+    trailSize: meta.trailSize ?? 1,
+    hitIds: new Set(),
+    trailTimer: 0
   };
 }
 
@@ -685,7 +806,7 @@ function canQueueCombo() {
   if (!clip || clip.duration <= 0) return false;
 
   const progress = currentAction.time / clip.duration;
-  return progress >= 0.32 && progress <= 0.95;
+  return progress >= 0.28 && progress <= 0.96;
 }
 
 function playAnimation(key, fade = 0.12, force = false) {
@@ -960,7 +1081,7 @@ function movePlayerHorizontal(deltaTime) {
 
   if (!lockedEnemy || lockedEnemy.dead) {
     const targetAngle = Math.atan2(moveDir.x, moveDir.z);
-    character.rotation.y = angleLerp(character.rotation.y, targetAngle, 0.24);
+    character.rotation.y = angleLerp(character.rotation.y, targetAngle, 0.28);
   }
 
   return true;
@@ -976,21 +1097,34 @@ function getAttackProgress() {
   return currentAction.time / clip.duration;
 }
 
+function pulseEnemy(enemy, scale = 1.12, duration = 0.09) {
+  enemy.hitPulse = {
+    timer: duration,
+    duration,
+    scale
+  };
+}
+
 function damageEnemy(enemy, damage, knockbackDir) {
   if (enemy.dead) return;
 
   enemy.life -= damage;
-  enemy.hitCooldown = 0.28;
-  enemy.stunTimer = 0.22;
+  enemy.hitCooldown = 0.3;
+  enemy.stunTimer = 0.24;
   enemy.velocity.addScaledVector(knockbackDir, activeAttack?.knockback ?? 3.8);
+  enemy.velocity.y += 0.35;
 
   enemy.lifeBar.style.width = `${clamp((enemy.life / enemy.maxLife) * 100, 0, 100)}%`;
 
   const hitPos = getEnemyHitPoint(enemy);
-  spawnImpactParticles(hitPos, knockbackDir, 15);
+  spawnImpactParticles(hitPos, knockbackDir, 18);
   triggerHitFlash();
-  triggerCameraShake(0.1);
+  triggerCameraShake(0.11);
   registerCombo();
+  pulseEnemy(enemy);
+  slowMotion(0.065, 0.48);
+
+  showCenterMessage(`-${damage}`, 0.18);
 
   if (enemy.life <= 0) {
     enemy.dead = true;
@@ -1002,6 +1136,7 @@ function damageEnemy(enemy, damage, knockbackDir) {
     if (enemy.actions.attack1) enemy.actions.attack1.stop();
     if (enemy.actions.attack2) enemy.actions.attack2.stop();
 
+    spawnImpactParticles(hitPos, knockbackDir, 26);
     enemy.group.visible = false;
 
     if (lockedEnemy === enemy) {
@@ -1013,8 +1148,32 @@ function damageEnemy(enemy, damage, knockbackDir) {
   }
 }
 
-function updateAttackHits() {
+function updateAttackTrails(dt) {
   if (!activeAttack || !character) return;
+
+  const progress = getAttackProgress();
+  if (progress < activeAttack.hitStart || progress > activeAttack.hitEnd) return;
+
+  activeAttack.trailTimer -= dt;
+  if (activeAttack.trailTimer > 0) return;
+
+  activeAttack.trailTimer = 0.018;
+
+  const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
+  const side = new THREE.Vector3(-forward.z, 0, forward.x).normalize();
+
+  const origin = character.position.clone();
+  origin.y += 1.12;
+  origin.addScaledVector(forward, 1.0);
+  origin.addScaledVector(side, (Math.random() - 0.5) * 1.2);
+
+  spawnSlashTrail(origin, forward, activeAttack.trailSize);
+}
+
+function updateAttackHits(dt) {
+  if (!activeAttack || !character) return;
+
+  updateAttackTrails(dt);
 
   const progress = getAttackProgress();
   if (progress < activeAttack.hitStart || progress > activeAttack.hitEnd) return;
@@ -1027,7 +1186,7 @@ function updateAttackHits() {
     if (dirToLocked.lengthSq() > 0.0001) {
       dirToLocked.normalize();
       const a = Math.atan2(dirToLocked.x, dirToLocked.z);
-      character.rotation.y = angleLerp(character.rotation.y, a, 0.36);
+      character.rotation.y = angleLerp(character.rotation.y, a, 0.38);
     }
   }
 
@@ -1052,18 +1211,19 @@ function updateAttackHits() {
     flatToEnemy.y = 0;
 
     const dist = flatToEnemy.length();
-    const effectiveRange = activeAttack.range + ENEMY_RADIUS + 0.35;
+    const effectiveRange = activeAttack.range + ENEMY_RADIUS + 0.4;
     if (dist > effectiveRange || dist < 0.0001) continue;
 
     flatToEnemy.normalize();
     const angle = Math.acos(clamp(forward.dot(flatToEnemy), -1, 1));
 
+    const veryClose = dist < 1.6;
     const closeBonus = dist < 1.25 ? 1 : 0;
-    const inCone = angle <= halfConeRad || closeBonus;
+    const inCone = angle <= halfConeRad || veryClose;
 
     if (!inCone) continue;
 
-    const score = (1 - angle / Math.max(halfConeRad, 0.001)) * 3.0 - dist * 0.75 + closeBonus * 1.15;
+    const score = (1 - angle / Math.max(halfConeRad, 0.001)) * 3.1 - dist * 0.72 + closeBonus * 1.2;
 
     if (score > bestScore) {
       bestScore = score;
@@ -1088,14 +1248,17 @@ function damagePlayer(amount) {
 
   if (holdBlockRequested || currentActionKey === BLOCK_KEY) {
     amount *= 0.25;
+    showCenterMessage("BLOCK", 0.2);
   }
 
   player.life = Math.max(0, player.life - amount);
   player.invulTime = 0.5;
   triggerCameraShake(0.08);
+  triggerHitFlash();
   updatePlayerHUD();
 
   if (player.life <= 0) {
+    showCenterMessage("DERROTA", 0.9);
     player.life = player.maxLife;
     player.stamina = player.maxStamina;
     player.exhausted = false;
@@ -1251,6 +1414,7 @@ function createEnemy(x, z) {
     attackCooldown: Math.random() * 0.8,
     attackTimer: 0,
     attackDidDamage: false,
+    hitPulse: null,
 
     lifeWrap: ui.lifeWrap,
     lifeBar: ui.lifeBar
@@ -1377,10 +1541,27 @@ function updateEnemyAttack(enemy, dt, distToPlayer) {
   if (enemy.currentActionKey === "attack1" || enemy.currentActionKey === "attack2") {
     enemy.attackTimer += dt;
 
-    if (!enemy.attackDidDamage && enemy.attackTimer >= 0.45 && distToPlayer <= ENEMY_ATTACK_RANGE + 0.2) {
+    if (!enemy.attackDidDamage && enemy.attackTimer >= 0.45 && distToPlayer <= ENEMY_ATTACK_RANGE + 0.25) {
       damagePlayer(ENEMY_CONTACT_DAMAGE);
       enemy.attackDidDamage = true;
     }
+  }
+}
+
+function updateEnemyVisualEffects(enemy, dt) {
+  if (!enemy.hitPulse) {
+    enemy.group.scale.setScalar(1);
+    return;
+  }
+
+  enemy.hitPulse.timer -= dt;
+  const t = clamp(enemy.hitPulse.timer / enemy.hitPulse.duration, 0, 1);
+  const s = THREE.MathUtils.lerp(1, enemy.hitPulse.scale, t);
+  enemy.group.scale.setScalar(s);
+
+  if (enemy.hitPulse.timer <= 0) {
+    enemy.hitPulse = null;
+    enemy.group.scale.setScalar(1);
   }
 }
 
@@ -1416,6 +1597,12 @@ function updateEnemies(dt) {
     if (enemy.stunTimer <= 0) {
       if (!isAttacking && dist < ENEMY_DETECT_RANGE && dist > ENEMY_ATTACK_RANGE) {
         enemy.velocity.addScaledVector(flat, ENEMY_SPEED * dt);
+
+        if (Math.random() < 0.018) {
+          const strafe = new THREE.Vector3(-flat.z, 0, flat.x).normalize();
+          enemy.velocity.addScaledVector(strafe, (Math.random() - 0.5) * 0.9);
+        }
+
         playEnemyAction(enemy, "walk");
       } else if (!isAttacking && dist <= ENEMY_ATTACK_RANGE) {
         playEnemyAction(enemy, "idle");
@@ -1428,8 +1615,8 @@ function updateEnemies(dt) {
 
     applyEnemySeparation(enemy, dt);
 
-    enemy.velocity.x *= 0.9;
-    enemy.velocity.z *= 0.9;
+    enemy.velocity.x *= enemy.onFloor ? 0.86 : 0.96;
+    enemy.velocity.z *= enemy.onFloor ? 0.86 : 0.96;
 
     const moveDelta = enemy.velocity.clone().multiplyScalar(dt);
     enemy.capsule.translate(moveDelta);
@@ -1442,6 +1629,8 @@ function updateEnemies(dt) {
       enemy.capsule.start.y - ENEMY_RADIUS - 0.03,
       center.z
     );
+
+    updateEnemyVisualEffects(enemy, dt);
 
     if (enemy.group.position.y < ENEMY_FALL_LIMIT_Y) {
       enemy.capsule.start.set(0, ENEMY_RADIUS + 0.05, 0);
@@ -1466,6 +1655,7 @@ function updateStamina(dt) {
     if (player.stamina <= 0) {
       player.stamina = 0;
       player.exhausted = true;
+      showCenterMessage("AGOTADO", 0.55);
     }
   } else {
     player.staminaCooldown = Math.max(0, player.staminaCooldown - dt);
@@ -1571,7 +1761,14 @@ function updatePlayer(deltaTime) {
   playerCollider.translate(tempVector);
 
   playerCollisions();
-  playerVelocity.multiplyScalar(0.98);
+
+  if (playerOnFloor) {
+    playerVelocity.x *= 0.72;
+    playerVelocity.z *= 0.72;
+  } else {
+    playerVelocity.x *= 0.96;
+    playerVelocity.z *= 0.96;
+  }
 
   const center = getCapsuleCenter(playerCollider);
   character.position.set(
@@ -1588,7 +1785,7 @@ function updatePlayer(deltaTime) {
   }
 
   updatePlayerFacing(deltaTime);
-  updateAttackHits();
+  updateAttackHits(deltaTime);
 
   if (!playerOnFloor && playerVelocity.y < -2) {
     if (currentActionKey !== JUMP_KEY) playAnimation(JUMP_KEY, 0.08, true);
@@ -1640,7 +1837,19 @@ function resolveCameraCollision(origin, desired) {
   return origin.clone().add(dir.multiplyScalar(safeDistance));
 }
 
-function updateThirdPersonCamera() {
+function getNearestAliveEnemyDistance() {
+  if (!character) return Infinity;
+
+  let best = Infinity;
+  for (const enemy of enemies) {
+    if (enemy.dead) continue;
+    const d = enemy.group.position.distanceTo(character.position);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+function updateThirdPersonCamera(dt) {
   if (!character) return;
 
   const charPos = character.position.clone();
@@ -1648,6 +1857,9 @@ function updateThirdPersonCamera() {
   let forward;
   let desiredDistance = CAMERA_DISTANCE;
   let desiredHeight = CAMERA_NORMAL_HEIGHT;
+
+  const nearestEnemyDist = getNearestAliveEnemyDistance();
+  const nearCombat = nearestEnemyDist < 5.5;
 
   if (lockedEnemy && !lockedEnemy.dead) {
     forward = lockedEnemy.group.position.clone().sub(charPos);
@@ -1663,11 +1875,18 @@ function updateThirdPersonCamera() {
   } else {
     forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
     cameraTarget.set(charPos.x, charPos.y + CAMERA_HEIGHT, charPos.z);
+
+    if (nearCombat) {
+      desiredDistance = CAMERA_COMBAT_DISTANCE;
+      desiredHeight = CAMERA_NORMAL_HEIGHT - 0.05;
+    }
   }
+
+  requestedCombatZoom = THREE.MathUtils.lerp(requestedCombatZoom, desiredDistance, dt * 5.5);
 
   cameraDesired
     .copy(cameraTarget)
-    .addScaledVector(forward, -desiredDistance)
+    .addScaledVector(forward, -requestedCombatZoom)
     .add(new THREE.Vector3(0, desiredHeight, 0));
 
   const safeDesired = resolveCameraCollision(cameraTarget, cameraDesired);
@@ -1855,7 +2074,9 @@ async function init() {
 function animate() {
   requestAnimationFrame(animate);
 
-  const deltaTime = Math.min(clock.getDelta(), 0.05);
+  const dtUnscaled = Math.min(clock.getDelta(), 0.05);
+  updateTimeScale(dtUnscaled);
+  const deltaTime = dtUnscaled * globalTimeScale;
 
   if (mixer) mixer.update(deltaTime);
 
@@ -1864,8 +2085,8 @@ function animate() {
   updateParticles(deltaTime);
   updateCombo(deltaTime);
   updateEffects(deltaTime);
-  updateThirdPersonCamera();
-  updateCameraKeyboard(deltaTime);
+  updateThirdPersonCamera(dtUnscaled);
+  updateCameraKeyboard(dtUnscaled);
 
   controls.update();
   renderer.render(scene, camera);
