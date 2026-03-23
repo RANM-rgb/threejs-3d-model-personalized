@@ -156,15 +156,17 @@ const ANIMS = [
   { key: "run", name: "Run", file: "assets/models/Unarmed Run Forward.fbx", type: "run" },
   { key: "jump", name: "Jump", file: "assets/models/Jumping Up.fbx", type: "jump" },
 
-  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.65, hitStart: 0.13, hitEnd: 0.64, staminaCost: 10, coneDeg: 100, knockback: 4.2, trailSize: 1.05 },
-  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 2.45, hitStart: 0.11, hitEnd: 0.58, staminaCost: 9, coneDeg: 96, knockback: 3.85, trailSize: 0.95 },
-  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 2.2, hitStart: 0.04, hitEnd: 0.36, staminaCost: 8, coneDeg: 120, knockback: 3.25, trailSize: 0.9 },
-  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 2.35, hitStart: 0.07, hitEnd: 0.5, staminaCost: 9, coneDeg: 110, knockback: 3.65, trailSize: 0.95 },
-  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 2.3, hitStart: 0.1, hitEnd: 0.52, staminaCost: 9, coneDeg: 108, knockback: 3.45, trailSize: 0.95 },
-  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.8, hitStart: 0.16, hitEnd: 0.68, staminaCost: 12, coneDeg: 92, knockback: 5.0, trailSize: 1.12 },
+  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.7, hitStart: 0.13, hitEnd: 0.64, staminaCost: 10, coneDeg: 100, knockback: 4.2, trailSize: 1.05 },
+  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 2.48, hitStart: 0.11, hitEnd: 0.58, staminaCost: 9, coneDeg: 96, knockback: 3.85, trailSize: 0.95 },
+  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 2.24, hitStart: 0.04, hitEnd: 0.36, staminaCost: 8, coneDeg: 120, knockback: 3.25, trailSize: 0.9 },
+  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 2.38, hitStart: 0.07, hitEnd: 0.50, staminaCost: 9, coneDeg: 110, knockback: 3.65, trailSize: 0.95 },
+  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 2.34, hitStart: 0.10, hitEnd: 0.52, staminaCost: 9, coneDeg: 108, knockback: 3.45, trailSize: 0.95 },
+  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.82, hitStart: 0.16, hitEnd: 0.68, staminaCost: 12, coneDeg: 92, knockback: 5.0, trailSize: 1.12 },
 
   { key: "7", name: "Block", file: "assets/models/Sword And Shield Crouch Block Idle.fbx", type: "blockHold" },
-  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 2.15, hitStart: 0.04, hitEnd: 0.34, staminaCost: 7, coneDeg: 130, knockback: 3.0, trailSize: 0.82 }
+  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 2.18, hitStart: 0.04, hitEnd: 0.34, staminaCost: 7, coneDeg: 130, knockback: 3.0, trailSize: 0.82 },
+
+  { key: "v", name: "Dodge", file: "assets/models/Stepping Backward.fbx", type: "dodge", staminaCost: 14, duration: 0.42, iframeStart: 0.06, iframeEnd: 0.26, speed: 9.5 }
 ];
 
 const IDLE_KEY = "idle";
@@ -173,6 +175,7 @@ const RUN_KEY = "run";
 const JUMP_KEY = "jump";
 const BLOCK_KEY = "7";
 const QUICK_KEY = "f";
+const DODGE_KEY = "v";
 const ATTACK_KEYS = ["1", "2", "3", "4", "5", "6"];
 
 const PLAYER_HEIGHT = 1.8;
@@ -185,6 +188,7 @@ const RUN_SPEED = 8.1;
 const ATTACK_MOVE_SPEED = 2.35;
 const BLOCK_MOVE_SPEED = 1.2;
 const JUMP_SPEED = 11;
+const DODGE_COOLDOWN = 0.55;
 
 const CAMERA_HEIGHT = 1.25;
 const CAMERA_DISTANCE = 4.9;
@@ -348,6 +352,7 @@ let combatWon = false;
 
 const particles = [];
 const slashTrails = [];
+const damageTexts = [];
 
 const particleGeo = new THREE.BufferGeometry();
 particleGeo.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0], 3));
@@ -368,6 +373,9 @@ let centerMessageTimer = 0;
 let globalTimeScale = 1;
 let slowMotionTimer = 0;
 let requestedCombatZoom = CAMERA_DISTANCE;
+
+let rightWeaponBone = null;
+let leftWeaponBone = null;
 
 const enemyAssets = {
   loaded: false,
@@ -394,7 +402,13 @@ const player = {
   staminaRegenPerSec: 18,
   staminaRegenDelay: 0.8,
   staminaCooldown: 0,
-  exhausted: false
+  exhausted: false,
+
+  dodgeCooldown: 0,
+  dodgeTimer: 0,
+  dodging: false,
+  dodgeVector: new THREE.Vector3(),
+  iframeTimer: 0
 };
 
 // =====================================================
@@ -466,14 +480,14 @@ function prepareEnemyVisual(obj) {
 function updateStatusLabel(label) {
   setStatus(`
     Actual: <b>${label}</b><br>
-    WASD mover · Shift sprint · Espacio saltar<br>
+    WASD mover · Shift sprint · Espacio saltar · V esquive<br>
     1-6 ataques · 7 cubrirse · F ataque rápido · R lock-on<br>
     Mouse cámara · Q/E zoom · Flechas cámara · N/M niebla · Z/X luz
   `);
 }
 
 function isOneShotType(type) {
-  return type === "attack" || type === "quickAttack" || type === "jump";
+  return type === "attack" || type === "quickAttack" || type === "jump" || type === "dodge";
 }
 
 function getCapsuleCenter(capsule) {
@@ -542,8 +556,9 @@ function updateEnemyHUD() {
     combatWon = true;
     victoryBanner.style.opacity = "1";
     victoryBanner.style.transform = "translate(-50%, -50%) scale(1)";
-    triggerCameraShake(0.18);
-    slowMotion(0.12, 0.42);
+    triggerCameraShake(0.2);
+    slowMotion(0.16, 0.35);
+    showCenterMessage("FINISH", 0.7);
   }
 }
 
@@ -624,28 +639,82 @@ function updateTimeScale(dtUnscaled) {
   }
 }
 
+function findBoneByKeywords(root, keywords) {
+  let found = null;
+
+  root.traverse((obj) => {
+    if (found) return;
+    if (!obj.isBone) return;
+
+    const name = obj.name.toLowerCase();
+    const ok = keywords.every((k) => name.includes(k));
+    if (ok) found = obj;
+  });
+
+  return found;
+}
+
+function detectWeaponBones() {
+  if (!character) return;
+
+  rightWeaponBone =
+    findBoneByKeywords(character, ["right", "hand"]) ||
+    findBoneByKeywords(character, ["r", "hand"]) ||
+    findBoneByKeywords(character, ["hand_r"]) ||
+    findBoneByKeywords(character, ["weapon", "r"]) ||
+    findBoneByKeywords(character, ["mixamorig", "righthand"]);
+
+  leftWeaponBone =
+    findBoneByKeywords(character, ["left", "hand"]) ||
+    findBoneByKeywords(character, ["l", "hand"]) ||
+    findBoneByKeywords(character, ["hand_l"]) ||
+    findBoneByKeywords(character, ["weapon", "l"]) ||
+    findBoneByKeywords(character, ["mixamorig", "lefthand"]);
+}
+
+function getTrailAnchorWorldPosition(out = new THREE.Vector3()) {
+  if (rightWeaponBone) {
+    rightWeaponBone.updateMatrixWorld(true);
+    out.setFromMatrixPosition(rightWeaponBone.matrixWorld);
+    return out;
+  }
+
+  if (leftWeaponBone) {
+    leftWeaponBone.updateMatrixWorld(true);
+    out.setFromMatrixPosition(leftWeaponBone.matrixWorld);
+    return out;
+  }
+
+  out.copy(character.position);
+  out.y += 1.15;
+  out.add(new THREE.Vector3(0.35, 0, 0));
+  return out;
+}
+
 // =====================================================
-// PARTICLES
+// PARTICLES / TEXTS
 // =====================================================
-function spawnImpactParticles(position, dir, count = 16) {
+function spawnImpactParticles(position, dir, count = 16, multiplier = 1) {
   for (let i = 0; i < count; i++) {
     const vel = new THREE.Vector3(
-      (Math.random() - 0.5) * 4.4 + dir.x * 1.65,
-      Math.random() * 3.8 + 0.9,
-      (Math.random() - 0.5) * 4.4 + dir.z * 1.65
+      (Math.random() - 0.5) * 4.4 * multiplier + dir.x * 1.65 * multiplier,
+      (Math.random() * 3.8 + 0.9) * multiplier,
+      (Math.random() - 0.5) * 4.4 * multiplier + dir.z * 1.65 * multiplier
     );
 
     const sprite = new THREE.Points(particleGeo, particleMat.clone());
     sprite.position.copy(position);
-    sprite.material.size = 0.07 + Math.random() * 0.14;
+    sprite.material.size = (0.07 + Math.random() * 0.14) * multiplier;
     sprite.material.opacity = 1;
     scene.add(sprite);
+
+    const maxLife = PARTICLE_MAX_LIFE * (0.85 + Math.random() * 0.5);
 
     particles.push({
       mesh: sprite,
       velocity: vel,
-      life: PARTICLE_MAX_LIFE * (0.85 + Math.random() * 0.5),
-      maxLife: PARTICLE_MAX_LIFE * (0.85 + Math.random() * 0.5),
+      life: maxLife,
+      maxLife,
       bounce: 0.22 + Math.random() * 0.14
     });
   }
@@ -674,6 +743,73 @@ function spawnSlashTrail(position, forward, size = 1) {
     life: 0.12,
     maxLife: 0.12
   });
+}
+
+function spawnDamageText(text, worldPosition, isFinisher = false) {
+  const el = document.createElement("div");
+  el.style.position = "fixed";
+  el.style.left = "0";
+  el.style.top = "0";
+  el.style.pointerEvents = "none";
+  el.style.zIndex = "1004";
+  el.style.fontFamily = "Arial, sans-serif";
+  el.style.fontWeight = "900";
+  el.style.fontSize = isFinisher ? "28px" : "22px";
+  el.style.color = isFinisher ? "#ffe066" : "#ffffff";
+  el.style.textShadow = isFinisher
+    ? "0 0 10px rgba(255,224,102,.8), 0 0 20px rgba(255,140,0,.6)"
+    : "0 0 10px rgba(0,0,0,.65)";
+  el.textContent = text;
+  document.body.appendChild(el);
+
+  damageTexts.push({
+    el,
+    position: worldPosition.clone(),
+    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.6, 1.2 + Math.random() * 0.4, 0),
+    life: isFinisher ? 0.9 : 0.65,
+    maxLife: isFinisher ? 0.9 : 0.65
+  });
+}
+
+function updateDamageTexts(dt) {
+  for (let i = damageTexts.length - 1; i >= 0; i--) {
+    const t = damageTexts[i];
+    t.life -= dt;
+
+    if (t.life <= 0) {
+      t.el.remove();
+      damageTexts.splice(i, 1);
+      continue;
+    }
+
+    t.velocity.y += 0.25 * dt;
+    t.position.addScaledVector(t.velocity, dt);
+
+    const p = t.position.clone().project(camera);
+    const visible = p.z < 1;
+
+    if (!visible) {
+      t.el.style.opacity = "0";
+      continue;
+    }
+
+    const x = (p.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-p.y * 0.5 + 0.5) * window.innerHeight;
+
+    t.el.style.left = `${x}px`;
+    t.el.style.top = `${y}px`;
+    t.el.style.transform = "translate(-50%, -50%)";
+    t.el.style.opacity = `${clamp(t.life / t.maxLife, 0, 1)}`;
+  }
+}
+
+function spawnFinisherBurst(position, dir) {
+  spawnImpactParticles(position, dir, 34, 1.45);
+  triggerCameraShake(0.24);
+  triggerHitFlash();
+  slowMotion(0.16, 0.28);
+  showCenterMessage("FINISHER", 0.48);
+  spawnDamageText("FINISH!", position.clone().add(new THREE.Vector3(0, 1.1, 0)), true);
 }
 
 function updateParticles(dt) {
@@ -721,6 +857,8 @@ function updateParticles(dt) {
     const a = clamp(t.life / t.maxLife, 0, 1);
     t.mesh.material.opacity = a * 0.4;
   }
+
+  updateDamageTexts(dt);
 }
 
 // =====================================================
@@ -856,6 +994,8 @@ function playAnimation(key, fade = 0.12, force = false) {
 function releaseToBaseAnimation() {
   actionLocked = false;
   clearAttack();
+  player.dodging = false;
+  player.dodgeTimer = 0;
 
   if (holdBlockRequested && actions.has(BLOCK_KEY)) {
     playAnimation(BLOCK_KEY, 0.08, true);
@@ -906,7 +1046,8 @@ function buildButtons() {
     ["5", "Ataque 5"],
     ["6", "Ataque 6"],
     ["7", "Cubrirse"],
-    ["f", "Ataque rápido"]
+    ["f", "Ataque rápido"],
+    ["v", "Esquive"]
   ];
 
   for (const [key, label] of items) {
@@ -918,6 +1059,11 @@ function buildButtons() {
         if (!actionLocked || currentActionKey !== BLOCK_KEY) {
           playAnimation(BLOCK_KEY, 0.08, true);
         }
+        return;
+      }
+
+      if (key === DODGE_KEY) {
+        tryStartDodge();
         return;
       }
 
@@ -984,29 +1130,7 @@ function getSideVector() {
   return new THREE.Vector3().crossVectors(forward, worldUp).normalize();
 }
 
-function isSprinting() {
-  const wantsSprint = keys["shift"] || keys["shiftleft"] || keys["shiftright"];
-  const canSprint =
-    wantsSprint &&
-    hasMovementInput() &&
-    playerOnFloor &&
-    !actionLocked &&
-    !holdBlockRequested &&
-    !player.exhausted &&
-    player.stamina > 0.5;
-
-  return !!canSprint;
-}
-
-function getMoveSpeed() {
-  if (currentActionKey === BLOCK_KEY) return BLOCK_MOVE_SPEED;
-  if (ATTACK_KEYS.includes(currentActionKey) || currentActionKey === QUICK_KEY) {
-    return ATTACK_MOVE_SPEED;
-  }
-  return isSprinting() ? RUN_SPEED : WALK_SPEED;
-}
-
-function movePlayerHorizontal(deltaTime) {
+function getInputMoveDirection() {
   let inputX = 0;
   let inputZ = 0;
 
@@ -1015,7 +1139,7 @@ function movePlayerHorizontal(deltaTime) {
   if (keys["a"]) inputX -= 1;
   if (keys["d"]) inputX += 1;
 
-  if (inputX === 0 && inputZ === 0) return false;
+  if (inputX === 0 && inputZ === 0) return null;
 
   const moveInput = new THREE.Vector3(inputX, 0, inputZ).normalize();
 
@@ -1037,13 +1161,35 @@ function movePlayerHorizontal(deltaTime) {
   moveDir.x = forward.x * moveInput.z + right.x * moveInput.x;
   moveDir.z = forward.z * moveInput.z + right.z * moveInput.x;
 
-  if (moveDir.lengthSq() === 0) return false;
-  moveDir.normalize();
+  if (moveDir.lengthSq() < 0.0001) return null;
+  return moveDir.normalize();
+}
 
-  const speed = getMoveSpeed();
-  const moveDistance = speed * deltaTime;
-  const moveDelta = moveDir.clone().multiplyScalar(moveDistance);
+function isSprinting() {
+  const wantsSprint = keys["shift"] || keys["shiftleft"] || keys["shiftright"];
+  const canSprint =
+    wantsSprint &&
+    hasMovementInput() &&
+    playerOnFloor &&
+    !actionLocked &&
+    !holdBlockRequested &&
+    !player.exhausted &&
+    !player.dodging &&
+    player.stamina > 0.5;
 
+  return !!canSprint;
+}
+
+function getMoveSpeed() {
+  if (player.dodging) return 0;
+  if (currentActionKey === BLOCK_KEY) return BLOCK_MOVE_SPEED;
+  if (ATTACK_KEYS.includes(currentActionKey) || currentActionKey === QUICK_KEY) {
+    return ATTACK_MOVE_SPEED;
+  }
+  return isSprinting() ? RUN_SPEED : WALK_SPEED;
+}
+
+function tryTranslateCapsule(moveDelta) {
   const oldStart = playerCollider.start.clone();
   const oldEnd = playerCollider.end.clone();
 
@@ -1079,12 +1225,83 @@ function movePlayerHorizontal(deltaTime) {
     }
   }
 
-  if (!lockedEnemy || lockedEnemy.dead) {
+  return true;
+}
+
+function movePlayerHorizontal(deltaTime) {
+  const moveDir = getInputMoveDirection();
+  if (!moveDir) return false;
+
+  const speed = getMoveSpeed();
+  const moveDistance = speed * deltaTime;
+  const moveDelta = moveDir.clone().multiplyScalar(moveDistance);
+
+  const moved = tryTranslateCapsule(moveDelta);
+
+  if (moved && (!lockedEnemy || lockedEnemy.dead)) {
     const targetAngle = Math.atan2(moveDir.x, moveDir.z);
     character.rotation.y = angleLerp(character.rotation.y, targetAngle, 0.28);
   }
 
+  return moved;
+}
+
+// =====================================================
+// DODGE
+// =====================================================
+function tryStartDodge() {
+  const meta = ANIMS.find((a) => a.key === DODGE_KEY);
+  if (!meta) return false;
+  if (player.dodgeCooldown > 0) return false;
+  if (!playerOnFloor) return false;
+  if (actionLocked) return false;
+  if (!spendStamina(meta.staminaCost ?? 0)) return false;
+
+  let dir = getInputMoveDirection();
+  if (!dir) {
+    dir = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
+  }
+
+  player.dodgeVector.copy(dir);
+  player.dodging = true;
+  player.dodgeTimer = meta.duration ?? 0.4;
+  player.iframeTimer = 0;
+  player.dodgeCooldown = DODGE_COOLDOWN;
+
+  const targetAngle = Math.atan2(dir.x, dir.z);
+  character.rotation.y = targetAngle;
+
+  playAnimation(DODGE_KEY, 0.06, true);
+  showCenterMessage("DODGE", 0.2);
   return true;
+}
+
+function updateDodge(dt) {
+  if (player.dodgeCooldown > 0) {
+    player.dodgeCooldown = Math.max(0, player.dodgeCooldown - dt);
+  }
+
+  if (!player.dodging) return;
+
+  const meta = ANIMS.find((a) => a.key === DODGE_KEY);
+  player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);
+  player.iframeTimer += dt;
+
+  const speed = meta?.speed ?? 9;
+  const intensity = clamp(player.dodgeTimer / (meta?.duration ?? 0.4), 0, 1);
+  const move = player.dodgeVector.clone().multiplyScalar(speed * dt * (0.55 + intensity * 0.45));
+  tryTranslateCapsule(move);
+
+  if (player.dodgeTimer <= 0) {
+    player.dodging = false;
+  }
+}
+
+function isPlayerInIFrames() {
+  if (!player.dodging) return false;
+  const meta = ANIMS.find((a) => a.key === DODGE_KEY);
+  if (!meta) return false;
+  return player.iframeTimer >= (meta.iframeStart ?? 0.05) && player.iframeTimer <= (meta.iframeEnd ?? 0.2);
 }
 
 // =====================================================
@@ -1108,6 +1325,8 @@ function pulseEnemy(enemy, scale = 1.12, duration = 0.09) {
 function damageEnemy(enemy, damage, knockbackDir) {
   if (enemy.dead) return;
 
+  const willDie = enemy.life - damage <= 0;
+
   enemy.life -= damage;
   enemy.hitCooldown = 0.3;
   enemy.stunTimer = 0.24;
@@ -1117,14 +1336,18 @@ function damageEnemy(enemy, damage, knockbackDir) {
   enemy.lifeBar.style.width = `${clamp((enemy.life / enemy.maxLife) * 100, 0, 100)}%`;
 
   const hitPos = getEnemyHitPoint(enemy);
-  spawnImpactParticles(hitPos, knockbackDir, 18);
+  spawnImpactParticles(hitPos, knockbackDir, willDie ? 26 : 18, willDie ? 1.25 : 1);
   triggerHitFlash();
-  triggerCameraShake(0.11);
+  triggerCameraShake(willDie ? 0.16 : 0.11);
   registerCombo();
   pulseEnemy(enemy);
-  slowMotion(0.065, 0.48);
+  slowMotion(willDie ? 0.12 : 0.065, willDie ? 0.34 : 0.48);
 
-  showCenterMessage(`-${damage}`, 0.18);
+  spawnDamageText(`-${damage}`, hitPos.clone().add(new THREE.Vector3(0, 0.6, 0)), willDie);
+
+  if (willDie) {
+    spawnFinisherBurst(hitPos, knockbackDir);
+  }
 
   if (enemy.life <= 0) {
     enemy.dead = true;
@@ -1136,7 +1359,6 @@ function damageEnemy(enemy, damage, knockbackDir) {
     if (enemy.actions.attack1) enemy.actions.attack1.stop();
     if (enemy.actions.attack2) enemy.actions.attack2.stop();
 
-    spawnImpactParticles(hitPos, knockbackDir, 26);
     enemy.group.visible = false;
 
     if (lockedEnemy === enemy) {
@@ -1160,14 +1382,8 @@ function updateAttackTrails(dt) {
   activeAttack.trailTimer = 0.018;
 
   const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
-  const side = new THREE.Vector3(-forward.z, 0, forward.x).normalize();
-
-  const origin = character.position.clone();
-  origin.y += 1.12;
-  origin.addScaledVector(forward, 1.0);
-  origin.addScaledVector(side, (Math.random() - 0.5) * 1.2);
-
-  spawnSlashTrail(origin, forward, activeAttack.trailSize);
+  const anchor = getTrailAnchorWorldPosition();
+  spawnSlashTrail(anchor, forward, activeAttack.trailSize);
 }
 
 function updateAttackHits(dt) {
@@ -1245,6 +1461,10 @@ function updateAttackHits(dt) {
 
 function damagePlayer(amount) {
   if (player.invulTime > 0) return;
+  if (isPlayerInIFrames()) {
+    showCenterMessage("MISS", 0.18);
+    return;
+  }
 
   if (holdBlockRequested || currentActionKey === BLOCK_KEY) {
     amount *= 0.25;
@@ -1687,7 +1907,7 @@ function tryPlayAttackByKey(key) {
 function handleAttackInputs() {
   for (const atkKey of ATTACK_KEYS) {
     if (keys[atkKey]) {
-      if (playerOnFloor && currentActionKey !== atkKey) {
+      if (playerOnFloor && currentActionKey !== atkKey && !player.dodging) {
         tryPlayAttackByKey(atkKey);
       }
       keys[atkKey] = false;
@@ -1695,15 +1915,21 @@ function handleAttackInputs() {
   }
 
   if (keys["f"]) {
-    if (playerOnFloor && currentActionKey !== QUICK_KEY) {
+    if (playerOnFloor && currentActionKey !== QUICK_KEY && !player.dodging) {
       tryPlayAttackByKey(QUICK_KEY);
     }
     keys["f"] = false;
+  }
+
+  if (keys["v"]) {
+    tryStartDodge();
+    keys["v"] = false;
   }
 }
 
 function updatePlayerFacing(dt) {
   if (!character) return;
+  if (player.dodging) return;
 
   if (lockedEnemy && !lockedEnemy.dead) {
     const dir = lockedEnemy.group.position.clone().sub(character.position);
@@ -1737,7 +1963,7 @@ function updatePlayer(deltaTime) {
     playerVelocity.y = Math.max(0, playerVelocity.y);
   }
 
-  if ((keys[" "] || keys["space"]) && playerOnFloor && !actionLocked) {
+  if ((keys[" "] || keys["space"]) && playerOnFloor && !actionLocked && !player.dodging) {
     playerVelocity.y = JUMP_SPEED;
     playerOnFloor = false;
     playAnimation(JUMP_KEY);
@@ -1745,17 +1971,21 @@ function updatePlayer(deltaTime) {
 
   handleAttackInputs();
 
-  holdBlockRequested = !!keys[BLOCK_KEY];
+  holdBlockRequested = !!keys[BLOCK_KEY] && !player.dodging;
 
-  if (holdBlockRequested && playerOnFloor) {
+  if (holdBlockRequested && playerOnFloor && !player.dodging) {
     if (!actionLocked || currentActionKey !== BLOCK_KEY) {
       playAnimation(BLOCK_KEY, 0.08, true);
     }
-  } else if (currentActionKey === BLOCK_KEY) {
+  } else if (currentActionKey === BLOCK_KEY && !keys[BLOCK_KEY]) {
     actionLocked = false;
   }
 
-  const wasMoving = movePlayerHorizontal(deltaTime);
+  updateDodge(deltaTime);
+
+  if (!player.dodging) {
+    movePlayerHorizontal(deltaTime);
+  }
 
   tempVector.copy(playerVelocity).multiplyScalar(deltaTime);
   playerCollider.translate(tempVector);
@@ -1792,20 +2022,23 @@ function updatePlayer(deltaTime) {
     return;
   }
 
+  if (player.dodging) return;
+
   if (holdBlockRequested) {
     if (currentActionKey !== BLOCK_KEY) playAnimation(BLOCK_KEY, 0.08, true);
     return;
   }
 
-  if (actionLocked && (ATTACK_KEYS.includes(currentActionKey) || currentActionKey === QUICK_KEY)) {
+  if (actionLocked && (ATTACK_KEYS.includes(currentActionKey) || currentActionKey === QUICK_KEY || currentActionKey === DODGE_KEY)) {
     return;
   }
 
   const sprinting = isSprinting();
+  const moving = !!getInputMoveDirection();
 
-  if (wasMoving && sprinting) {
+  if (moving && sprinting) {
     playAnimation(RUN_KEY);
-  } else if (wasMoving) {
+  } else if (moving) {
     playAnimation(WALK_KEY);
   } else {
     playAnimation(IDLE_KEY);
@@ -1977,6 +2210,8 @@ async function loadPlayerAndAnimations() {
 
   normalizeCharacter(character);
   scene.add(character);
+
+  detectWeaponBones();
 
   mixer = new THREE.AnimationMixer(character);
   hookAnimationFinished();
