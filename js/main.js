@@ -24,12 +24,11 @@ function showError(msg) {
   console.error(msg);
 }
 
-// HUD simple
 const hud = document.createElement("div");
 hud.style.position = "fixed";
 hud.style.top = "12px";
 hud.style.right = "12px";
-hud.style.width = "240px";
+hud.style.width = "260px";
 hud.style.padding = "10px 12px";
 hud.style.borderRadius = "12px";
 hud.style.background = "rgba(10,16,30,0.82)";
@@ -45,12 +44,14 @@ hud.innerHTML = `
   </div>
   <div id="playerLifeText">100 / 100</div>
   <div id="enemyCounter" style="margin-top:10px;">Enemigos vivos: 0</div>
+  <div id="lockOnText" style="margin-top:8px;opacity:.9;">Lock-on: no</div>
 `;
 document.body.appendChild(hud);
 
 const $playerLifeBar = document.getElementById("playerLifeBar");
 const $playerLifeText = document.getElementById("playerLifeText");
 const $enemyCounter = document.getElementById("enemyCounter");
+const $lockOnText = document.getElementById("lockOnText");
 
 function updatePlayerHUD() {
   const pct = Math.max(0, (player.life / player.maxLife) * 100);
@@ -61,6 +62,10 @@ function updatePlayerHUD() {
 function updateEnemyHUD() {
   const alive = enemies.filter((e) => !e.dead).length;
   $enemyCounter.textContent = `Enemigos vivos: ${alive}`;
+}
+
+function updateLockHUD() {
+  $lockOnText.textContent = `Lock-on: ${lockedEnemy && !lockedEnemy.dead ? "sí" : "no"}`;
 }
 
 // =====================================================
@@ -108,22 +113,25 @@ const JUMP_SPEED = 11;
 
 const CAMERA_HEIGHT = 1.25;
 const CAMERA_DISTANCE = 4.6;
+const CAMERA_MIN_DISTANCE = 1.15;
 const CAMERA_LERP = 0.12;
 const TARGET_LERP = 0.18;
+const CAMERA_WALL_OFFSET = 0.2;
 
 const FALL_LIMIT_Y = -20;
-
-// más fino para subir escalones sin trabarse
 const STEP_HEIGHT = 0.25;
 const PLAYER_GROUND_EPS = 0.08;
 
-// enemigos
 const ENEMY_COUNT = 6;
 const ENEMY_SPEED = 2.2;
 const ENEMY_ATTACK_RANGE = 1.25;
 const ENEMY_DETECT_RANGE = 16;
 const ENEMY_CONTACT_DAMAGE = 10;
 const ENEMY_ATTACK_COOLDOWN = 1.0;
+const ENEMY_SEPARATION_DISTANCE = 1.2;
+const ENEMY_SEPARATION_FORCE = 1.8;
+
+const LOCK_ON_RANGE = 18;
 
 // =====================================================
 // THREE SETUP
@@ -224,6 +232,7 @@ let queuedActionKey = null;
 let holdBlockRequested = false;
 
 const keys = {};
+const pressedOnce = {};
 const clock = new THREE.Clock();
 
 const playerCollider = new Capsule(
@@ -238,12 +247,15 @@ let playerOnFloor = false;
 
 const tempVector = new THREE.Vector3();
 const tempBox = new THREE.Box3();
+const tempRay = new THREE.Ray();
+const worldUp = new THREE.Vector3(0, 1, 0);
 
 const cameraTarget = new THREE.Vector3();
 const cameraDesired = new THREE.Vector3();
 
 let activeAttack = null;
 const enemies = [];
+let lockedEnemy = null;
 
 // =====================================================
 // PLAYER DATA
@@ -304,7 +316,7 @@ function updateStatusLabel(label) {
   setStatus(`
     Actual: <b>${label}</b><br>
     WASD mover · Shift correr · Espacio saltar<br>
-    1-6 ataques · 7 cubrirse · F ataque rápido<br>
+    1-6 ataques · 7 cubrirse · F ataque rápido · R lock-on<br>
     Mouse cámara · Q/E zoom · Flechas cámara · N/M niebla · Z/X luz
   `);
 }
@@ -326,6 +338,14 @@ function angleLerp(a, b, t) {
   while (diff > Math.PI) diff -= Math.PI * 2;
   while (diff < -Math.PI) diff += Math.PI * 2;
   return a + diff * t;
+}
+
+function consumePressed(key) {
+  if (pressedOnce[key]) {
+    pressedOnce[key] = false;
+    return true;
+  }
+  return false;
 }
 
 // =====================================================
@@ -396,6 +416,17 @@ function beginAttack(meta) {
 
 function clearAttack() {
   activeAttack = null;
+}
+
+function canQueueCombo() {
+  if (!currentAction || !currentActionKey) return false;
+  if (!(ATTACK_KEYS.includes(currentActionKey) || currentActionKey === QUICK_KEY)) return false;
+
+  const clip = currentAction.getClip();
+  if (!clip || clip.duration <= 0) return false;
+
+  const progress = currentAction.time / clip.duration;
+  return progress >= 0.35 && progress <= 0.95;
 }
 
 function playAnimation(key, fade = 0.12, force = false) {
@@ -510,8 +541,11 @@ function buildButtons() {
         return;
       }
 
-      if (actionLocked) queuedActionKey = key;
-      else playAnimation(key);
+      if (actionLocked) {
+        if (canQueueCombo()) queuedActionKey = key;
+      } else {
+        playAnimation(key);
+      }
     });
     $buttons.appendChild(btn);
   }
@@ -549,7 +583,6 @@ function playerCollisions() {
   }
 }
 
-// forward corregido: ya no va invertido
 function getForwardVector() {
   camera.getWorldDirection(playerDirection);
   playerDirection.y = 0;
@@ -563,10 +596,9 @@ function getForwardVector() {
   return playerDirection;
 }
 
-// side vector corregido
 function getSideVector() {
   const forward = getForwardVector().clone();
-  return new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+  return new THREE.Vector3().crossVectors(forward, worldUp).normalize();
 }
 
 function getMoveSpeed() {
@@ -592,10 +624,20 @@ function movePlayerHorizontal(deltaTime) {
 
   const moveInput = new THREE.Vector3(inputX, 0, inputZ).normalize();
 
-  const forward = getForwardVector().clone();
-  const right = getSideVector().clone();
+  let forward;
+  let right;
 
-  // composición más estable del vector de movimiento
+  if (lockedEnemy && !lockedEnemy.dead && character) {
+    forward = lockedEnemy.mesh.position.clone().sub(character.position);
+    forward.y = 0;
+    if (forward.lengthSq() < 0.0001) forward.set(0, 0, 1);
+    else forward.normalize();
+    right = new THREE.Vector3().crossVectors(forward, worldUp).normalize();
+  } else {
+    forward = getForwardVector().clone();
+    right = getSideVector().clone();
+  }
+
   const moveDir = new THREE.Vector3();
   moveDir.x = forward.x * moveInput.z + right.x * moveInput.x;
   moveDir.z = forward.z * moveInput.z + right.z * moveInput.x;
@@ -610,7 +652,6 @@ function movePlayerHorizontal(deltaTime) {
   const oldStart = playerCollider.start.clone();
   const oldEnd = playerCollider.end.clone();
 
-  // intento normal
   playerCollider.translate(moveDelta);
   let hit = worldOctree.capsuleIntersect(playerCollider);
 
@@ -618,18 +659,15 @@ function movePlayerHorizontal(deltaTime) {
     playerCollider.start.copy(oldStart);
     playerCollider.end.copy(oldEnd);
 
-    // intento de escalón
     playerCollider.translate(new THREE.Vector3(0, STEP_HEIGHT, 0));
     playerCollider.translate(moveDelta);
 
-    let stepHit = worldOctree.capsuleIntersect(playerCollider);
+    const stepHit = worldOctree.capsuleIntersect(playerCollider);
 
     if (stepHit) {
-      // restaurar
       playerCollider.start.copy(oldStart);
       playerCollider.end.copy(oldEnd);
 
-      // deslizar sobre la pared usando la normal del primer choque
       const slideNormal = hit.normal.clone();
       const slide = moveDelta.clone().projectOnPlane(slideNormal);
       playerCollider.translate(slide);
@@ -641,15 +679,15 @@ function movePlayerHorizontal(deltaTime) {
         return false;
       }
     } else {
-      // si logró subir, baja suave para ajustarse al piso
       playerCollider.translate(new THREE.Vector3(0, -STEP_HEIGHT, 0));
       playerCollisions();
     }
   }
 
-  // rotación suave
-  const targetAngle = Math.atan2(moveDir.x, moveDir.z);
-  character.rotation.y = angleLerp(character.rotation.y, targetAngle, 0.2);
+  if (!lockedEnemy || lockedEnemy.dead) {
+    const targetAngle = Math.atan2(moveDir.x, moveDir.z);
+    character.rotation.y = angleLerp(character.rotation.y, targetAngle, 0.2);
+  }
 
   return true;
 }
@@ -676,6 +714,12 @@ function damageEnemy(enemy, damage, knockbackDir) {
     enemy.dead = true;
     enemy.mesh.visible = false;
     enemy.lifeWrap.style.display = "none";
+
+    if (lockedEnemy === enemy) {
+      lockedEnemy = null;
+      updateLockHUD();
+    }
+
     updateEnemyHUD();
   }
 }
@@ -689,6 +733,9 @@ function updateAttackHits() {
   const playerPos = character.position.clone();
   const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
 
+  let bestEnemy = null;
+  let bestScore = -Infinity;
+
   for (const enemy of enemies) {
     if (enemy.dead) continue;
 
@@ -701,11 +748,18 @@ function updateAttackHits() {
     toEnemy.normalize();
 
     const facing = forward.dot(toEnemy);
-    if (facing < 0.15) continue;
+    if (facing < 0.1) continue;
 
-    damageEnemy(enemy, activeAttack.damage, forward);
+    const score = facing * 3 - dist;
+    if (score > bestScore) {
+      bestScore = score;
+      bestEnemy = enemy;
+    }
+  }
+
+  if (bestEnemy) {
+    damageEnemy(bestEnemy, activeAttack.damage, forward);
     activeAttack.hasHit = true;
-    break;
   }
 }
 
@@ -728,6 +782,37 @@ function damagePlayer(amount) {
     playerCollider.end.set(0, PLAYER_HEIGHT + 0.05, 0);
     playerVelocity.set(0, 0, 0);
   }
+}
+
+// =====================================================
+// LOCK ON
+// =====================================================
+function findNearestEnemy() {
+  if (!character) return null;
+
+  let best = null;
+  let bestDist = Infinity;
+  const pos = character.position;
+
+  for (const enemy of enemies) {
+    if (enemy.dead) continue;
+    const dist = enemy.mesh.position.distanceTo(pos);
+    if (dist < LOCK_ON_RANGE && dist < bestDist) {
+      bestDist = dist;
+      best = enemy;
+    }
+  }
+
+  return best;
+}
+
+function toggleLockOn() {
+  if (lockedEnemy && !lockedEnemy.dead) {
+    lockedEnemy = null;
+  } else {
+    lockedEnemy = findNearestEnemy();
+  }
+  updateLockHUD();
 }
 
 // =====================================================
@@ -803,12 +888,35 @@ function updateEnemyBillboards() {
     pos.y += 1.6;
     pos.project(camera);
 
+    const visible = pos.z < 1;
+    enemy.lifeWrap.style.display = visible ? "block" : "none";
+
     const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
     const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
 
     enemy.lifeWrap.style.left = `${x - 22}px`;
     enemy.lifeWrap.style.top = `${y - 20}px`;
   }
+}
+
+function applyEnemySeparation(enemy, dt) {
+  const push = new THREE.Vector3();
+
+  for (const other of enemies) {
+    if (other === enemy || other.dead) continue;
+
+    const delta = enemy.mesh.position.clone().sub(other.mesh.position);
+    delta.y = 0;
+
+    const dist = delta.length();
+    if (dist > 0 && dist < ENEMY_SEPARATION_DISTANCE) {
+      delta.normalize();
+      const strength = (ENEMY_SEPARATION_DISTANCE - dist) * ENEMY_SEPARATION_FORCE;
+      push.addScaledVector(delta, strength * dt);
+    }
+  }
+
+  enemy.velocity.add(push);
 }
 
 function updateEnemies(dt) {
@@ -825,7 +933,6 @@ function updateEnemies(dt) {
     const toPlayer = playerPos.clone().sub(enemy.mesh.position);
     const flat = toPlayer.clone();
     flat.y = 0;
-
     const dist = flat.length();
 
     if (dist > 0.001) {
@@ -837,7 +944,9 @@ function updateEnemies(dt) {
       enemy.velocity.addScaledVector(flat, ENEMY_SPEED * dt);
     }
 
-    enemy.velocity.multiplyScalar(0.9);
+    applyEnemySeparation(enemy, dt);
+
+    enemy.velocity.multiplyScalar(0.88);
     enemy.mesh.position.addScaledVector(enemy.velocity, dt);
 
     const enemyCapsule = new Capsule(
@@ -865,8 +974,57 @@ function updateEnemies(dt) {
 // =====================================================
 // PLAYER UPDATE
 // =====================================================
+function handleAttackInputs() {
+  for (const atkKey of ATTACK_KEYS) {
+    if (keys[atkKey]) {
+      if (playerOnFloor && currentActionKey !== atkKey) {
+        if (actionLocked) {
+          if (canQueueCombo()) queuedActionKey = atkKey;
+        } else {
+          playAnimation(atkKey);
+        }
+      }
+      keys[atkKey] = false;
+    }
+  }
+
+  if (keys["f"]) {
+    if (playerOnFloor && currentActionKey !== QUICK_KEY) {
+      if (actionLocked) {
+        if (canQueueCombo()) queuedActionKey = QUICK_KEY;
+      } else {
+        playAnimation(QUICK_KEY);
+      }
+    }
+    keys["f"] = false;
+  }
+}
+
+function updatePlayerFacing(dt) {
+  if (!character) return;
+
+  if (lockedEnemy && !lockedEnemy.dead) {
+    const dir = lockedEnemy.mesh.position.clone().sub(character.position);
+    dir.y = 0;
+    if (dir.lengthSq() > 0.0001) {
+      dir.normalize();
+      const angle = Math.atan2(dir.x, dir.z);
+      character.rotation.y = angleLerp(character.rotation.y, angle, Math.min(1, dt * 10));
+    }
+  }
+}
+
 function updatePlayer(deltaTime) {
   if (!character) return;
+
+  if (lockedEnemy && lockedEnemy.dead) {
+    lockedEnemy = null;
+    updateLockHUD();
+  }
+
+  if (consumePressed("r")) {
+    toggleLockOn();
+  }
 
   player.invulTime = Math.max(0, player.invulTime - deltaTime);
 
@@ -882,23 +1040,7 @@ function updatePlayer(deltaTime) {
     playAnimation(JUMP_KEY);
   }
 
-  for (const atkKey of ATTACK_KEYS) {
-    if (keys[atkKey]) {
-      if (playerOnFloor && currentActionKey !== atkKey) {
-        if (actionLocked) queuedActionKey = atkKey;
-        else playAnimation(atkKey);
-      }
-      keys[atkKey] = false;
-    }
-  }
-
-  if (keys["f"]) {
-    if (playerOnFloor && currentActionKey !== QUICK_KEY) {
-      if (actionLocked) queuedActionKey = QUICK_KEY;
-      else playAnimation(QUICK_KEY);
-    }
-    keys["f"] = false;
-  }
+  handleAttackInputs();
 
   holdBlockRequested = !!keys[BLOCK_KEY];
 
@@ -916,8 +1058,6 @@ function updatePlayer(deltaTime) {
   playerCollider.translate(tempVector);
 
   playerCollisions();
-
-  // suaviza micro-trabas
   playerVelocity.multiplyScalar(0.98);
 
   const center = getCapsuleCenter(playerCollider);
@@ -934,6 +1074,7 @@ function updatePlayer(deltaTime) {
     playerOnFloor = false;
   }
 
+  updatePlayerFacing(deltaTime);
   updateAttackHits();
 
   if (!playerOnFloor && playerVelocity.y < -2) {
@@ -964,42 +1105,80 @@ function updatePlayer(deltaTime) {
 // =====================================================
 // CÁMARA
 // =====================================================
+function resolveCameraCollision(origin, desired) {
+  const dir = desired.clone().sub(origin);
+  const distance = dir.length();
+
+  if (distance <= 0.001) return desired;
+  dir.normalize();
+
+  tempRay.origin.copy(origin);
+  tempRay.direction.copy(dir);
+
+  let safeDistance = distance;
+
+  if (typeof worldOctree.rayIntersect === "function") {
+    const hit = worldOctree.rayIntersect(tempRay);
+    if (hit && hit.distance < distance) {
+      safeDistance = Math.max(CAMERA_MIN_DISTANCE, hit.distance - CAMERA_WALL_OFFSET);
+    }
+  }
+
+  return origin.clone().add(dir.multiplyScalar(safeDistance));
+}
+
 function updateThirdPersonCamera() {
   if (!character) return;
 
   const charPos = character.position.clone();
-  const forward = new THREE.Vector3(0, 0, 1)
-    .applyQuaternion(character.quaternion)
-    .normalize();
 
-  cameraTarget.set(
-    charPos.x,
-    charPos.y + CAMERA_HEIGHT,
-    charPos.z
-  );
+  let forward;
+  if (lockedEnemy && !lockedEnemy.dead) {
+    forward = lockedEnemy.mesh.position.clone().sub(charPos);
+    forward.y = 0;
+    if (forward.lengthSq() < 0.0001) forward.set(0, 0, 1);
+    else forward.normalize();
+  } else {
+    forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
+  }
+
+  if (lockedEnemy && !lockedEnemy.dead) {
+    const targetMix = lockedEnemy.mesh.position.clone().lerp(charPos, 0.55);
+    cameraTarget.set(targetMix.x, charPos.y + CAMERA_HEIGHT, targetMix.z);
+  } else {
+    cameraTarget.set(
+      charPos.x,
+      charPos.y + CAMERA_HEIGHT,
+      charPos.z
+    );
+  }
 
   cameraDesired
     .copy(cameraTarget)
     .addScaledVector(forward, -CAMERA_DISTANCE)
     .add(new THREE.Vector3(0, 1.8, 0));
 
+  const safeDesired = resolveCameraCollision(cameraTarget, cameraDesired);
+
   controls.target.lerp(cameraTarget, TARGET_LERP);
-  camera.position.lerp(cameraDesired, CAMERA_LERP);
+  camera.position.lerp(safeDesired, CAMERA_LERP);
 }
 
 function updateCameraKeyboard(dt) {
+  if (lockedEnemy && !lockedEnemy.dead) return;
+
   const rotateSpeed = 1.2;
   const zoomSpeed = 4.5;
 
   if (keys["arrowleft"]) {
     camera.position.sub(controls.target);
-    camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotateSpeed * dt);
+    camera.position.applyAxisAngle(worldUp, rotateSpeed * dt);
     camera.position.add(controls.target);
   }
 
   if (keys["arrowright"]) {
     camera.position.sub(controls.target);
-    camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotateSpeed * dt);
+    camera.position.applyAxisAngle(worldUp, -rotateSpeed * dt);
     camera.position.add(controls.target);
   }
 
@@ -1044,6 +1223,7 @@ function handleEnvironmentKeys(e) {
 async function init() {
   buildButtons();
   updatePlayerHUD();
+  updateLockHUD();
 
   setStatus("Cargando escenario...");
   await loadScenario();
@@ -1106,8 +1286,15 @@ async function init() {
   playAnimation(IDLE_KEY, 0.01, true);
 
   window.addEventListener("keydown", (e) => {
-    keys[e.key.toLowerCase()] = true;
-    keys[e.code.toLowerCase()] = true;
+    const key = e.key.toLowerCase();
+    const code = e.code.toLowerCase();
+
+    if (!keys[key]) pressedOnce[key] = true;
+    if (!keys[code]) pressedOnce[code] = true;
+
+    keys[key] = true;
+    keys[code] = true;
+
     handleEnvironmentKeys(e);
   });
 
