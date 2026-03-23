@@ -4,6 +4,7 @@ import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { Octree } from "three/addons/math/Octree.js";
 import { Capsule } from "three/addons/math/Capsule.js";
+import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 
 // =====================================================
 // UI
@@ -90,6 +91,11 @@ const BASE_CHARACTER = "assets/models/Paladin WProp J Nordstrom.fbx";
 const SCENARIO_FILE = "assets/scenarios/castle/scene.gltf";
 const COLLISION_FILE = "assets/models/collision-world.glb";
 
+// ENEMIGOS FBX
+const ENEMY_MODEL_FILE = "assets/models/enemies/Ch10_nonPBR.fbx";
+const ENEMY_ATTACK_FILE = "assets/models/enemies/Zombie Attack.fbx";
+const ENEMY_ATTACK_FILE_2 = "assets/models/enemies/Zombie Punching.fbx";
+
 const ANIMS = [
   { key: "idle", name: "Idle", file: "assets/models/Idle.fbx", type: "idle" },
   { key: "walk", name: "Walk", file: "assets/models/Walking.fbx", type: "walk" },
@@ -141,13 +147,17 @@ const STEP_HEIGHT = 0.25;
 const PLAYER_GROUND_EPS = 0.08;
 
 const ENEMY_COUNT = 6;
-const ENEMY_SPEED = 2.25;
-const ENEMY_ATTACK_RANGE = 1.25;
+const ENEMY_SPEED = 1.9;
+const ENEMY_ATTACK_RANGE = 1.35;
 const ENEMY_DETECT_RANGE = 16;
 const ENEMY_CONTACT_DAMAGE = 10;
-const ENEMY_ATTACK_COOLDOWN = 1.0;
-const ENEMY_SEPARATION_DISTANCE = 1.2;
-const ENEMY_SEPARATION_FORCE = 1.8;
+const ENEMY_ATTACK_COOLDOWN = 1.2;
+const ENEMY_SEPARATION_DISTANCE = 1.4;
+const ENEMY_SEPARATION_FORCE = 2.2;
+const ENEMY_HEIGHT = 1.75;
+const ENEMY_RADIUS = 0.32;
+const ENEMY_SCALE = 0.011; // AJUSTA si quieres más grande o más chico
+const ENEMY_FALL_LIMIT_Y = -20;
 
 const LOCK_ON_RANGE = 18;
 
@@ -275,6 +285,18 @@ let activeAttack = null;
 const enemies = [];
 let lockedEnemy = null;
 
+// enemy shared assets
+const enemyAssets = {
+  loaded: false,
+  model: null,
+  clips: {
+    idle: null,
+    walk: null,
+    attack1: null,
+    attack2: null
+  }
+};
+
 // =====================================================
 // PLAYER DATA
 // =====================================================
@@ -336,6 +358,26 @@ function normalizeCharacter(obj) {
   obj.position.x -= center.x;
   obj.position.z -= center.z;
   obj.position.y -= box2.min.y;
+}
+
+function prepareEnemyVisual(obj) {
+  obj.scale.setScalar(ENEMY_SCALE);
+
+  obj.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+      if (child.material) child.material.side = THREE.FrontSide;
+    }
+  });
+
+  const box = new THREE.Box3().setFromObject(obj);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+
+  obj.position.x -= center.x;
+  obj.position.z -= center.z;
+  obj.position.y -= box.min.y;
 }
 
 function updateStatusLabel(label) {
@@ -440,7 +482,7 @@ async function loadScenario() {
 }
 
 // =====================================================
-// ANIMACIONES
+// ANIMACIONES PLAYER
 // =====================================================
 function beginAttack(meta) {
   activeAttack = {
@@ -595,7 +637,7 @@ function buildButtons() {
 }
 
 // =====================================================
-// COLISIONES
+// COLISIONES PLAYER
 // =====================================================
 function playerCollisions() {
   const result = worldOctree.capsuleIntersect(playerCollider);
@@ -683,7 +725,7 @@ function movePlayerHorizontal(deltaTime) {
   let right;
 
   if (lockedEnemy && !lockedEnemy.dead && character) {
-    forward = lockedEnemy.mesh.position.clone().sub(character.position);
+    forward = lockedEnemy.group.position.clone().sub(character.position);
     forward.y = 0;
     if (forward.lengthSq() < 0.0001) forward.set(0, 0, 1);
     else forward.normalize();
@@ -748,7 +790,7 @@ function movePlayerHorizontal(deltaTime) {
 }
 
 // =====================================================
-// COMBATE
+// COMBATE PLAYER
 // =====================================================
 function getAttackProgress() {
   if (!activeAttack || !currentAction) return 0;
@@ -759,16 +801,24 @@ function getAttackProgress() {
 
 function damageEnemy(enemy, damage, knockbackDir) {
   if (enemy.dead) return;
+
   enemy.life -= damage;
-  enemy.hitCooldown = 0.2;
-  enemy.velocity.addScaledVector(knockbackDir, 5);
+  enemy.hitCooldown = 0.25;
+  enemy.velocity.addScaledVector(knockbackDir, 3.6);
 
   enemy.lifeBar.style.width = `${clamp((enemy.life / enemy.maxLife) * 100, 0, 100)}%`;
 
   if (enemy.life <= 0) {
     enemy.dead = true;
-    enemy.mesh.visible = false;
+    enemy.attackCooldown = 999;
     enemy.lifeWrap.style.display = "none";
+
+    if (enemy.actions.idle) enemy.actions.idle.stop();
+    if (enemy.actions.walk) enemy.actions.walk.stop();
+    if (enemy.actions.attack1) enemy.actions.attack1.stop();
+    if (enemy.actions.attack2) enemy.actions.attack2.stop();
+
+    enemy.group.visible = false;
 
     if (lockedEnemy === enemy) {
       lockedEnemy = null;
@@ -794,7 +844,7 @@ function updateAttackHits() {
   for (const enemy of enemies) {
     if (enemy.dead) continue;
 
-    const toEnemy = enemy.mesh.position.clone().sub(playerPos);
+    const toEnemy = enemy.group.position.clone().sub(playerPos);
     const dist = toEnemy.length();
     if (dist > activeAttack.range) continue;
 
@@ -854,7 +904,7 @@ function findNearestEnemy() {
 
   for (const enemy of enemies) {
     if (enemy.dead) continue;
-    const dist = enemy.mesh.position.distanceTo(pos);
+    const dist = enemy.group.position.distanceTo(pos);
     if (dist < LOCK_ON_RANGE && dist < bestDist) {
       bestDist = dist;
       best = enemy;
@@ -874,25 +924,55 @@ function toggleLockOn() {
 }
 
 // =====================================================
-// ENEMIGOS
+// ENEMY ASSETS
 // =====================================================
-function createEnemy(x, z) {
-  const mesh = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.35, 1.0, 4, 8),
-    new THREE.MeshStandardMaterial({
-      color: 0xb33b3b,
-      roughness: 0.75,
-      metalness: 0.08
-    })
-  );
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  mesh.position.set(x, 0.9, z);
-  scene.add(mesh);
+async function loadEnemyAssets() {
+  setStatus("Cargando zombie base...");
+  const zombieBase = await loadFBX(ENEMY_MODEL_FILE);
 
+  setStatus("Cargando animación zombie 1...");
+  const attackA = await loadFBX(ENEMY_ATTACK_FILE);
+
+  setStatus("Cargando animación zombie 2...");
+  const attackB = await loadFBX(ENEMY_ATTACK_FILE_2);
+
+  enemyAssets.model = zombieBase;
+  enemyAssets.clips.idle = getFirstClip(zombieBase) || getFirstClip(attackB) || getFirstClip(attackA);
+  enemyAssets.clips.walk = getFirstClip(attackB) || getFirstClip(zombieBase) || getFirstClip(attackA);
+  enemyAssets.clips.attack1 = getFirstClip(attackA) || getFirstClip(attackB) || getFirstClip(zombieBase);
+  enemyAssets.clips.attack2 = getFirstClip(attackB) || getFirstClip(attackA) || getFirstClip(zombieBase);
+  enemyAssets.loaded = true;
+}
+
+function playEnemyAction(enemy, key, fade = 0.15) {
+  if (!enemy.actions[key]) return;
+  if (enemy.currentActionKey === key) return;
+
+  const next = enemy.actions[key];
+  if (enemy.currentAction) enemy.currentAction.fadeOut(fade);
+
+  next.reset();
+  next.enabled = true;
+  next.setEffectiveWeight(1);
+  next.setEffectiveTimeScale(1);
+
+  if (key === "attack1" || key === "attack2") {
+    next.setLoop(THREE.LoopOnce, 1);
+    next.clampWhenFinished = true;
+  } else {
+    next.setLoop(THREE.LoopRepeat, Infinity);
+    next.clampWhenFinished = false;
+  }
+
+  next.fadeIn(fade).play();
+  enemy.currentAction = next;
+  enemy.currentActionKey = key;
+}
+
+function createEnemyLifeUI() {
   const lifeWrap = document.createElement("div");
   lifeWrap.style.position = "fixed";
-  lifeWrap.style.width = "44px";
+  lifeWrap.style.width = "52px";
   lifeWrap.style.height = "6px";
   lifeWrap.style.background = "rgba(0,0,0,0.45)";
   lifeWrap.style.borderRadius = "999px";
@@ -907,17 +987,67 @@ function createEnemy(x, z) {
   lifeBar.style.background = "#ff4d4f";
   lifeWrap.appendChild(lifeBar);
 
-  return {
-    mesh,
+  return { lifeWrap, lifeBar };
+}
+
+function createEnemy(x, z) {
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const model = SkeletonUtils.clone(enemyAssets.model);
+  prepareEnemyVisual(model);
+  group.add(model);
+
+  const mixer = new THREE.AnimationMixer(model);
+  const actions = {};
+
+  if (enemyAssets.clips.idle) actions.idle = mixer.clipAction(enemyAssets.clips.idle);
+  if (enemyAssets.clips.walk) actions.walk = mixer.clipAction(enemyAssets.clips.walk);
+  if (enemyAssets.clips.attack1) actions.attack1 = mixer.clipAction(enemyAssets.clips.attack1);
+  if (enemyAssets.clips.attack2) actions.attack2 = mixer.clipAction(enemyAssets.clips.attack2);
+
+  const ui = createEnemyLifeUI();
+
+  const enemy = {
+    group,
+    model,
+    mixer,
+    actions,
+    currentAction: null,
+    currentActionKey: null,
+
+    capsule: new Capsule(
+      new THREE.Vector3(x, ENEMY_RADIUS + 0.05, z),
+      new THREE.Vector3(x, ENEMY_HEIGHT + 0.05, z),
+      ENEMY_RADIUS
+    ),
+
     velocity: new THREE.Vector3(),
-    life: 50,
-    maxLife: 50,
+    onFloor: false,
+
+    life: 60,
+    maxLife: 60,
     dead: false,
     hitCooldown: 0,
     attackCooldown: Math.random() * 0.8,
-    lifeWrap,
-    lifeBar
+    attackTimer: 0,
+    attackDidDamage: false,
+
+    lifeWrap: ui.lifeWrap,
+    lifeBar: ui.lifeBar
   };
+
+  mixer.addEventListener("finished", () => {
+    if (enemy.dead) return;
+    if (enemy.currentActionKey === "attack1" || enemy.currentActionKey === "attack2") {
+      enemy.attackTimer = 0;
+      enemy.attackDidDamage = false;
+      playEnemyAction(enemy, "idle");
+    }
+  });
+
+  playEnemyAction(enemy, "idle", 0.01);
+  return enemy;
 }
 
 function spawnEnemies() {
@@ -938,12 +1068,41 @@ function spawnEnemies() {
   updateEnemyHUD();
 }
 
+function enemyCollisions(enemy) {
+  const result = worldOctree.capsuleIntersect(enemy.capsule);
+
+  enemy.onFloor = false;
+
+  if (result) {
+    enemy.onFloor = result.normal.y > 0.25;
+
+    if (enemy.onFloor) {
+      enemy.velocity.y = 0;
+    } else {
+      enemy.velocity.addScaledVector(
+        result.normal,
+        -result.normal.dot(enemy.velocity)
+      );
+    }
+
+    enemy.capsule.translate(result.normal.multiplyScalar(result.depth));
+  }
+
+  if (enemy.capsule.start.y < ENEMY_RADIUS + 0.03) {
+    const delta = (ENEMY_RADIUS + 0.03) - enemy.capsule.start.y;
+    enemy.capsule.start.y += delta;
+    enemy.capsule.end.y += delta;
+    enemy.onFloor = true;
+    enemy.velocity.y = 0;
+  }
+}
+
 function updateEnemyBillboards() {
   for (const enemy of enemies) {
     if (enemy.dead) continue;
 
-    const pos = enemy.mesh.position.clone();
-    pos.y += 1.6;
+    const pos = enemy.group.position.clone();
+    pos.y += 2.05;
     pos.project(camera);
 
     const visible = pos.z < 1;
@@ -952,7 +1111,7 @@ function updateEnemyBillboards() {
     const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
     const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
 
-    enemy.lifeWrap.style.left = `${x - 22}px`;
+    enemy.lifeWrap.style.left = `${x - 26}px`;
     enemy.lifeWrap.style.top = `${y - 20}px`;
   }
 }
@@ -963,7 +1122,7 @@ function applyEnemySeparation(enemy, dt) {
   for (const other of enemies) {
     if (other === enemy || other.dead) continue;
 
-    const delta = enemy.mesh.position.clone().sub(other.mesh.position);
+    const delta = enemy.group.position.clone().sub(other.group.position);
     delta.y = 0;
 
     const dist = delta.length();
@@ -977,6 +1136,34 @@ function applyEnemySeparation(enemy, dt) {
   enemy.velocity.add(push);
 }
 
+function updateEnemyAttack(enemy, dt, distToPlayer) {
+  if (enemy.dead) return;
+
+  enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
+
+  if (
+    distToPlayer <= ENEMY_ATTACK_RANGE &&
+    enemy.attackCooldown <= 0 &&
+    enemy.currentActionKey !== "attack1" &&
+    enemy.currentActionKey !== "attack2"
+  ) {
+    const attackKey = Math.random() > 0.5 ? "attack1" : "attack2";
+    playEnemyAction(enemy, attackKey);
+    enemy.attackCooldown = ENEMY_ATTACK_COOLDOWN;
+    enemy.attackTimer = 0;
+    enemy.attackDidDamage = false;
+  }
+
+  if (enemy.currentActionKey === "attack1" || enemy.currentActionKey === "attack2") {
+    enemy.attackTimer += dt;
+
+    if (!enemy.attackDidDamage && enemy.attackTimer >= 0.45 && distToPlayer <= ENEMY_ATTACK_RANGE + 0.2) {
+      damagePlayer(ENEMY_CONTACT_DAMAGE);
+      enemy.attackDidDamage = true;
+    }
+  }
+}
+
 function updateEnemies(dt) {
   if (!character) return;
 
@@ -985,45 +1172,59 @@ function updateEnemies(dt) {
   for (const enemy of enemies) {
     if (enemy.dead) continue;
 
+    enemy.mixer.update(dt);
     enemy.hitCooldown = Math.max(0, enemy.hitCooldown - dt);
-    enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
 
-    const toPlayer = playerPos.clone().sub(enemy.mesh.position);
+    if (!enemy.onFloor) {
+      enemy.velocity.y -= GRAVITY * dt;
+    }
+
+    const toPlayer = playerPos.clone().sub(enemy.group.position);
     const flat = toPlayer.clone();
     flat.y = 0;
     const dist = flat.length();
 
     if (dist > 0.001) {
       flat.normalize();
-      enemy.mesh.rotation.y = Math.atan2(flat.x, flat.z);
+      const angle = Math.atan2(flat.x, flat.z);
+      enemy.group.rotation.y = angle;
     }
 
-    if (dist < ENEMY_DETECT_RANGE && dist > ENEMY_ATTACK_RANGE) {
+    const isAttacking = enemy.currentActionKey === "attack1" || enemy.currentActionKey === "attack2";
+
+    if (!isAttacking && dist < ENEMY_DETECT_RANGE && dist > ENEMY_ATTACK_RANGE) {
       enemy.velocity.addScaledVector(flat, ENEMY_SPEED * dt);
+      playEnemyAction(enemy, "walk");
+    } else if (!isAttacking && dist <= ENEMY_ATTACK_RANGE) {
+      playEnemyAction(enemy, "idle");
+    } else if (!isAttacking && dist >= ENEMY_DETECT_RANGE) {
+      playEnemyAction(enemy, "idle");
     }
 
     applyEnemySeparation(enemy, dt);
 
-    enemy.velocity.multiplyScalar(0.88);
-    enemy.mesh.position.addScaledVector(enemy.velocity, dt);
+    enemy.velocity.x *= 0.9;
+    enemy.velocity.z *= 0.9;
 
-    const enemyCapsule = new Capsule(
-      new THREE.Vector3(enemy.mesh.position.x, 0.35, enemy.mesh.position.z),
-      new THREE.Vector3(enemy.mesh.position.x, 1.75, enemy.mesh.position.z),
-      0.35
+    const moveDelta = enemy.velocity.clone().multiplyScalar(dt);
+    enemy.capsule.translate(moveDelta);
+
+    enemyCollisions(enemy);
+
+    const center = getCapsuleCenter(enemy.capsule);
+    enemy.group.position.set(
+      center.x,
+      enemy.capsule.start.y - ENEMY_RADIUS,
+      center.z
     );
 
-    const result = worldOctree.capsuleIntersect(enemyCapsule);
-    if (result) {
-      enemy.mesh.position.add(result.normal.multiplyScalar(result.depth));
+    if (enemy.group.position.y < ENEMY_FALL_LIMIT_Y) {
+      enemy.capsule.start.set(0, ENEMY_RADIUS + 0.05, 0);
+      enemy.capsule.end.set(0, ENEMY_HEIGHT + 0.05, 0);
+      enemy.velocity.set(0, 0, 0);
     }
 
-    if (enemy.mesh.position.y < 0.9) enemy.mesh.position.y = 0.9;
-
-    if (dist <= ENEMY_ATTACK_RANGE && enemy.attackCooldown <= 0) {
-      damagePlayer(ENEMY_CONTACT_DAMAGE);
-      enemy.attackCooldown = ENEMY_ATTACK_COOLDOWN;
-    }
+    updateEnemyAttack(enemy, dt, dist);
   }
 
   updateEnemyBillboards();
@@ -1092,7 +1293,7 @@ function updatePlayerFacing(dt) {
   if (!character) return;
 
   if (lockedEnemy && !lockedEnemy.dead) {
-    const dir = lockedEnemy.mesh.position.clone().sub(character.position);
+    const dir = lockedEnemy.group.position.clone().sub(character.position);
     dir.y = 0;
     if (dir.lengthSq() > 0.0001) {
       dir.normalize();
@@ -1192,7 +1393,7 @@ function updatePlayer(deltaTime) {
 }
 
 // =====================================================
-// CÁMARA AAA
+// CÁMARA
 // =====================================================
 function resolveCameraCollision(origin, desired) {
   const dir = desired.clone().sub(origin);
@@ -1226,7 +1427,7 @@ function updateThirdPersonCamera() {
   let desiredHeight = CAMERA_NORMAL_HEIGHT;
 
   if (lockedEnemy && !lockedEnemy.dead) {
-    forward = lockedEnemy.mesh.position.clone().sub(charPos);
+    forward = lockedEnemy.group.position.clone().sub(charPos);
     forward.y = 0;
     if (forward.lengthSq() < 0.0001) forward.set(0, 0, 1);
     else forward.normalize();
@@ -1234,7 +1435,7 @@ function updateThirdPersonCamera() {
     desiredDistance = CAMERA_LOCK_DISTANCE;
     desiredHeight = CAMERA_LOCK_HEIGHT;
 
-    const mid = charPos.clone().lerp(lockedEnemy.mesh.position, 0.38);
+    const mid = charPos.clone().lerp(lockedEnemy.group.position, 0.38);
     cameraTarget.set(mid.x, charPos.y + CAMERA_HEIGHT, mid.z);
   } else {
     forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
@@ -1343,7 +1544,7 @@ async function init() {
 
   for (let i = 0; i < ANIMS.length; i++) {
     const meta = ANIMS[i];
-    setStatus(`Cargando animaciones... <b>${i + 1}/${ANIMS.length}</b><br>${meta.name}`);
+    setStatus(`Cargando animaciones jugador... <b>${i + 1}/${ANIMS.length}</b><br>${meta.name}`);
 
     let fbxAnim;
     try {
@@ -1365,6 +1566,16 @@ async function init() {
     clip.name = meta.name;
     const action = mixer.clipAction(clip);
     actions.set(meta.key, { action, meta });
+  }
+
+  try {
+    await loadEnemyAssets();
+  } catch ({ url, err }) {
+    showError(
+      `No se pudieron cargar los archivos del zombie.\nArchivo: ${url}\n\n` +
+      `Error: ${err?.message || err}`
+    );
+    throw err;
   }
 
   playerCollider.start.set(0, PLAYER_RADIUS + 0.05, 0);
