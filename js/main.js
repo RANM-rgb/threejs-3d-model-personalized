@@ -59,7 +59,7 @@ function updatePlayerHUD() {
 }
 
 function updateEnemyHUD() {
-  const alive = enemies.filter(e => !e.dead).length;
+  const alive = enemies.filter((e) => !e.dead).length;
   $enemyCounter.textContent = `Enemigos vivos: ${alive}`;
 }
 
@@ -100,10 +100,10 @@ const PLAYER_RADIUS = 0.35;
 const PLAYER_MODEL_VISUAL_HEIGHT = 1.8;
 
 const GRAVITY = 30;
-const WALK_SPEED = 4.5;
-const RUN_SPEED = 7.8;
-const ATTACK_MOVE_SPEED = 2.1;
-const BLOCK_MOVE_SPEED = 1.2;
+const WALK_SPEED = 4.8;
+const RUN_SPEED = 8.0;
+const ATTACK_MOVE_SPEED = 2.2;
+const BLOCK_MOVE_SPEED = 1.25;
 const JUMP_SPEED = 11;
 
 const CAMERA_HEIGHT = 1.25;
@@ -112,6 +112,10 @@ const CAMERA_LERP = 0.12;
 const TARGET_LERP = 0.18;
 
 const FALL_LIMIT_Y = -20;
+
+// más fino para subir escalones sin trabarse
+const STEP_HEIGHT = 0.25;
+const PLAYER_GROUND_EPS = 0.08;
 
 // enemigos
 const ENEMY_COUNT = 6;
@@ -317,9 +321,11 @@ function clamp(v, a, b) {
   return Math.max(a, Math.min(b, v));
 }
 
-function getPlayerPosition() {
-  const center = getCapsuleCenter(playerCollider);
-  return new THREE.Vector3(center.x, playerCollider.start.y - PLAYER_RADIUS, center.z);
+function angleLerp(a, b, t) {
+  let diff = b - a;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  return a + diff * t;
 }
 
 // =====================================================
@@ -512,7 +518,7 @@ function buildButtons() {
 }
 
 // =====================================================
-// MOVIMIENTO Y COLISIONES
+// COLISIONES
 // =====================================================
 function playerCollisions() {
   const result = worldOctree.capsuleIntersect(playerCollider);
@@ -520,22 +526,22 @@ function playerCollisions() {
   playerOnFloor = false;
 
   if (result) {
-    playerOnFloor = result.normal.y > 0.3;
+    playerOnFloor = result.normal.y > 0.25;
 
-    if (!playerOnFloor) {
+    if (playerOnFloor) {
+      playerVelocity.y = 0;
+    } else {
       playerVelocity.addScaledVector(
         result.normal,
         -result.normal.dot(playerVelocity)
       );
-    } else {
-      playerVelocity.y = 0;
     }
 
     playerCollider.translate(result.normal.multiplyScalar(result.depth));
   }
 
-  if (playerCollider.start.y < PLAYER_RADIUS) {
-    const delta = PLAYER_RADIUS - playerCollider.start.y;
+  if (playerCollider.start.y < PLAYER_RADIUS + PLAYER_GROUND_EPS) {
+    const delta = (PLAYER_RADIUS + PLAYER_GROUND_EPS) - playerCollider.start.y;
     playerCollider.start.y += delta;
     playerCollider.end.y += delta;
     playerOnFloor = true;
@@ -543,19 +549,24 @@ function playerCollisions() {
   }
 }
 
+// forward corregido: ya no va invertido
 function getForwardVector() {
   camera.getWorldDirection(playerDirection);
   playerDirection.y = 0;
-  playerDirection.normalize();
+
+  if (playerDirection.lengthSq() < 0.0001) {
+    playerDirection.set(0, 0, 1);
+  } else {
+    playerDirection.normalize();
+  }
+
   return playerDirection;
 }
 
+// side vector corregido
 function getSideVector() {
-  camera.getWorldDirection(playerDirection);
-  playerDirection.y = 0;
-  playerDirection.normalize();
-  playerDirection.cross(camera.up);
-  return playerDirection;
+  const forward = getForwardVector().clone();
+  return new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 }
 
 function getMoveSpeed() {
@@ -568,37 +579,79 @@ function getMoveSpeed() {
     : WALK_SPEED;
 }
 
-function controlsMovement(deltaTime) {
+function movePlayerHorizontal(deltaTime) {
+  let inputX = 0;
+  let inputZ = 0;
+
+  if (keys["w"]) inputZ += 1;
+  if (keys["s"]) inputZ -= 1;
+  if (keys["a"]) inputX -= 1;
+  if (keys["d"]) inputX += 1;
+
+  if (inputX === 0 && inputZ === 0) return false;
+
+  const moveInput = new THREE.Vector3(inputX, 0, inputZ).normalize();
+
+  const forward = getForwardVector().clone();
+  const right = getSideVector().clone();
+
+  // composición más estable del vector de movimiento
+  const moveDir = new THREE.Vector3();
+  moveDir.x = forward.x * moveInput.z + right.x * moveInput.x;
+  moveDir.z = forward.z * moveInput.z + right.z * moveInput.x;
+
+  if (moveDir.lengthSq() === 0) return false;
+  moveDir.normalize();
+
   const speed = getMoveSpeed();
   const moveDistance = speed * deltaTime;
+  const moveDelta = moveDir.clone().multiplyScalar(moveDistance);
 
-  let moving = false;
+  const oldStart = playerCollider.start.clone();
+  const oldEnd = playerCollider.end.clone();
 
-  if (keys["w"]) {
-    tempVector.copy(getForwardVector()).multiplyScalar(moveDistance);
-    playerCollider.translate(tempVector);
-    moving = true;
+  // intento normal
+  playerCollider.translate(moveDelta);
+  let hit = worldOctree.capsuleIntersect(playerCollider);
+
+  if (hit) {
+    playerCollider.start.copy(oldStart);
+    playerCollider.end.copy(oldEnd);
+
+    // intento de escalón
+    playerCollider.translate(new THREE.Vector3(0, STEP_HEIGHT, 0));
+    playerCollider.translate(moveDelta);
+
+    let stepHit = worldOctree.capsuleIntersect(playerCollider);
+
+    if (stepHit) {
+      // restaurar
+      playerCollider.start.copy(oldStart);
+      playerCollider.end.copy(oldEnd);
+
+      // deslizar sobre la pared usando la normal del primer choque
+      const slideNormal = hit.normal.clone();
+      const slide = moveDelta.clone().projectOnPlane(slideNormal);
+      playerCollider.translate(slide);
+
+      const slideHit = worldOctree.capsuleIntersect(playerCollider);
+      if (slideHit) {
+        playerCollider.start.copy(oldStart);
+        playerCollider.end.copy(oldEnd);
+        return false;
+      }
+    } else {
+      // si logró subir, baja suave para ajustarse al piso
+      playerCollider.translate(new THREE.Vector3(0, -STEP_HEIGHT, 0));
+      playerCollisions();
+    }
   }
 
-  if (keys["s"]) {
-    tempVector.copy(getForwardVector()).multiplyScalar(-moveDistance);
-    playerCollider.translate(tempVector);
-    moving = true;
-  }
+  // rotación suave
+  const targetAngle = Math.atan2(moveDir.x, moveDir.z);
+  character.rotation.y = angleLerp(character.rotation.y, targetAngle, 0.2);
 
-  if (keys["a"]) {
-    tempVector.copy(getSideVector()).multiplyScalar(-moveDistance);
-    playerCollider.translate(tempVector);
-    moving = true;
-  }
-
-  if (keys["d"]) {
-    tempVector.copy(getSideVector()).multiplyScalar(moveDistance);
-    playerCollider.translate(tempVector);
-    moving = true;
-  }
-
-  return moving;
+  return true;
 }
 
 // =====================================================
@@ -857,12 +910,15 @@ function updatePlayer(deltaTime) {
     actionLocked = false;
   }
 
-  const wasMoving = controlsMovement(deltaTime);
+  const wasMoving = movePlayerHorizontal(deltaTime);
 
   tempVector.copy(playerVelocity).multiplyScalar(deltaTime);
   playerCollider.translate(tempVector);
 
   playerCollisions();
+
+  // suaviza micro-trabas
+  playerVelocity.multiplyScalar(0.98);
 
   const center = getCapsuleCenter(playerCollider);
   character.position.set(
@@ -870,35 +926,6 @@ function updatePlayer(deltaTime) {
     playerCollider.start.y - PLAYER_RADIUS,
     center.z
   );
-
-  let inputX = 0;
-  let inputZ = 0;
-  if (keys["w"]) inputZ -= 1;
-  if (keys["s"]) inputZ += 1;
-  if (keys["a"]) inputX -= 1;
-  if (keys["d"]) inputX += 1;
-
-  if (inputX !== 0 || inputZ !== 0) {
-    const moveInput = new THREE.Vector3(inputX, 0, inputZ).normalize();
-
-    const forward = new THREE.Vector3();
-    camera.getWorldDirection(forward);
-    forward.y = 0;
-    forward.normalize();
-
-    const right = new THREE.Vector3()
-      .crossVectors(forward, new THREE.Vector3(0, 1, 0))
-      .normalize();
-
-    const worldMove = new THREE.Vector3();
-    worldMove.addScaledVector(forward, moveInput.z);
-    worldMove.addScaledVector(right, moveInput.x);
-
-    if (worldMove.lengthSq() > 0) {
-      worldMove.normalize();
-      character.rotation.y = Math.atan2(worldMove.x, worldMove.z);
-    }
-  }
 
   if (character.position.y < FALL_LIMIT_Y) {
     playerCollider.start.set(0, PLAYER_RADIUS + 0.05, 0);
