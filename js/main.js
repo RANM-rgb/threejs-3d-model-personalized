@@ -32,7 +32,7 @@ const hud = document.createElement("div");
 hud.style.position = "fixed";
 hud.style.top = "12px";
 hud.style.right = "12px";
-hud.style.width = "300px";
+hud.style.width = "310px";
 hud.style.padding = "12px 14px";
 hud.style.borderRadius = "14px";
 hud.style.background = "rgba(10,16,30,0.86)";
@@ -56,10 +56,46 @@ hud.innerHTML = `
   </div>
   <div id="playerStaminaText">100 / 100</div>
 
+  <div style="margin-top:10px;">Puntaje</div>
+  <div id="scoreText" style="font-weight:700;">0</div>
+
+  <div style="margin-top:10px;">Kills</div>
+  <div id="killsText" style="font-weight:700;">0</div>
+
+  <div style="margin-top:10px;">Wave</div>
+  <div id="waveText" style="font-weight:700;">1</div>
+
   <div id="enemyCounter" style="margin-top:10px;">Enemigos vivos: 0</div>
   <div id="lockOnText" style="margin-top:8px;opacity:.9;">Lock-on: no</div>
 `;
 document.body.appendChild(hud);
+
+const targetHUD = document.createElement("div");
+targetHUD.style.position = "fixed";
+targetHUD.style.left = "50%";
+targetHUD.style.top = "18px";
+targetHUD.style.transform = "translateX(-50%)";
+targetHUD.style.width = "340px";
+targetHUD.style.padding = "10px 14px";
+targetHUD.style.borderRadius = "14px";
+targetHUD.style.background = "rgba(12,18,34,.86)";
+targetHUD.style.color = "#fff";
+targetHUD.style.fontFamily = "Arial, sans-serif";
+targetHUD.style.fontSize = "13px";
+targetHUD.style.zIndex = "1000";
+targetHUD.style.boxShadow = "0 8px 24px rgba(0,0,0,.35)";
+targetHUD.style.opacity = "0";
+targetHUD.style.pointerEvents = "none";
+targetHUD.style.transition = "opacity .18s ease";
+targetHUD.innerHTML = `
+  <div style="font-weight:900;font-size:14px;margin-bottom:6px;">Objetivo fijado</div>
+  <div id="targetName" style="margin-bottom:4px;">Zombie</div>
+  <div style="height:12px;background:#2b3550;border-radius:999px;overflow:hidden;">
+    <div id="targetLifeBar" style="height:100%;width:100%;background:#ff4d4f;"></div>
+  </div>
+  <div id="targetLifeText" style="margin-top:6px;">60 / 60</div>
+`;
+document.body.appendChild(targetHUD);
 
 const comboUI = document.createElement("div");
 comboUI.style.position = "fixed";
@@ -113,6 +149,27 @@ victoryBanner.style.zIndex = "1002";
 victoryBanner.textContent = "VICTORIA";
 document.body.appendChild(victoryBanner);
 
+const defeatBanner = document.createElement("div");
+defeatBanner.style.position = "fixed";
+defeatBanner.style.left = "50%";
+defeatBanner.style.top = "50%";
+defeatBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
+defeatBanner.style.padding = "20px 32px";
+defeatBanner.style.borderRadius = "18px";
+defeatBanner.style.background = "rgba(38,14,14,.92)";
+defeatBanner.style.color = "#fff";
+defeatBanner.style.fontFamily = "Arial, sans-serif";
+defeatBanner.style.fontWeight = "900";
+defeatBanner.style.fontSize = "34px";
+defeatBanner.style.letterSpacing = "1px";
+defeatBanner.style.boxShadow = "0 20px 50px rgba(0,0,0,.4)";
+defeatBanner.style.opacity = "0";
+defeatBanner.style.pointerEvents = "none";
+defeatBanner.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+defeatBanner.style.zIndex = "1002";
+defeatBanner.textContent = "DERROTA";
+document.body.appendChild(defeatBanner);
+
 const centerMessage = document.createElement("div");
 centerMessage.style.position = "fixed";
 centerMessage.style.left = "50%";
@@ -138,6 +195,12 @@ const $playerStaminaBar = document.getElementById("playerStaminaBar");
 const $playerStaminaText = document.getElementById("playerStaminaText");
 const $enemyCounter = document.getElementById("enemyCounter");
 const $lockOnText = document.getElementById("lockOnText");
+const $scoreText = document.getElementById("scoreText");
+const $killsText = document.getElementById("killsText");
+const $waveText = document.getElementById("waveText");
+const $targetName = document.getElementById("targetName");
+const $targetLifeBar = document.getElementById("targetLifeBar");
+const $targetLifeText = document.getElementById("targetLifeText");
 
 // =====================================================
 // CONFIG
@@ -150,21 +213,32 @@ const ENEMY_MODEL_FILE = "assets/models/enemies/Ch10_nonPBR.fbx";
 const ENEMY_ATTACK_FILE = "assets/models/enemies/Zombie Attack.fbx";
 const ENEMY_ATTACK_FILE_2 = "assets/models/enemies/Zombie Punching.fbx";
 
+const AUDIO_FILES = {
+  hit: "assets/audio/hit.wav",
+  block: "assets/audio/block.wav",
+  death: "assets/audio/death.wav",
+  step1: "assets/audio/step1.wav",
+  step2: "assets/audio/step2.wav",
+  dodge: "assets/audio/dodge.wav",
+  victory: "assets/audio/victory.wav",
+  switch: "assets/audio/switch.wav"
+};
+
 const ANIMS = [
   { key: "idle", name: "Idle", file: "assets/models/Idle.fbx", type: "idle" },
   { key: "walk", name: "Walk", file: "assets/models/Walking.fbx", type: "walk" },
   { key: "run", name: "Run", file: "assets/models/Unarmed Run Forward.fbx", type: "run" },
   { key: "jump", name: "Jump", file: "assets/models/Jumping Up.fbx", type: "jump" },
 
-  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.7, hitStart: 0.13, hitEnd: 0.64, staminaCost: 10, coneDeg: 100, knockback: 4.2, trailSize: 1.05 },
-  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 2.48, hitStart: 0.11, hitEnd: 0.58, staminaCost: 9, coneDeg: 96, knockback: 3.85, trailSize: 0.95 },
-  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 2.24, hitStart: 0.04, hitEnd: 0.36, staminaCost: 8, coneDeg: 120, knockback: 3.25, trailSize: 0.9 },
-  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 2.38, hitStart: 0.07, hitEnd: 0.50, staminaCost: 9, coneDeg: 110, knockback: 3.65, trailSize: 0.95 },
-  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 2.34, hitStart: 0.10, hitEnd: 0.52, staminaCost: 9, coneDeg: 108, knockback: 3.45, trailSize: 0.95 },
-  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.82, hitStart: 0.16, hitEnd: 0.68, staminaCost: 12, coneDeg: 92, knockback: 5.0, trailSize: 1.12 },
+  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.7, hitStart: 0.13, hitEnd: 0.64, staminaCost: 10, coneDeg: 100, knockback: 4.2, trailSize: 1.05, score: 25 },
+  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 2.48, hitStart: 0.11, hitEnd: 0.58, staminaCost: 9, coneDeg: 96, knockback: 3.85, trailSize: 0.95, score: 22 },
+  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 2.24, hitStart: 0.04, hitEnd: 0.36, staminaCost: 8, coneDeg: 120, knockback: 3.25, trailSize: 0.9, score: 18 },
+  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 2.38, hitStart: 0.07, hitEnd: 0.50, staminaCost: 9, coneDeg: 110, knockback: 3.65, trailSize: 0.95, score: 20 },
+  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 2.34, hitStart: 0.10, hitEnd: 0.52, staminaCost: 9, coneDeg: 108, knockback: 3.45, trailSize: 0.95, score: 20 },
+  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.82, hitStart: 0.16, hitEnd: 0.68, staminaCost: 12, coneDeg: 92, knockback: 5.0, trailSize: 1.12, score: 30 },
 
   { key: "7", name: "Block", file: "assets/models/Sword And Shield Crouch Block Idle.fbx", type: "blockHold" },
-  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 2.18, hitStart: 0.04, hitEnd: 0.34, staminaCost: 7, coneDeg: 130, knockback: 3.0, trailSize: 0.82 },
+  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 2.18, hitStart: 0.04, hitEnd: 0.34, staminaCost: 7, coneDeg: 130, knockback: 3.0, trailSize: 0.82, score: 15 },
 
   { key: "v", name: "Dodge", file: "assets/models/Stepping Backward.fbx", type: "dodge", staminaCost: 14, duration: 0.42, iframeStart: 0.06, iframeEnd: 0.26, speed: 9.5 }
 ];
@@ -205,7 +279,7 @@ const FALL_LIMIT_Y = -20;
 const STEP_HEIGHT = 0.28;
 const PLAYER_GROUND_EPS = 0.08;
 
-const ENEMY_COUNT = 6;
+const ENEMY_BASE_COUNT = 4;
 const ENEMY_SPEED = 1.95;
 const ENEMY_ATTACK_RANGE = 1.35;
 const ENEMY_DETECT_RANGE = 16;
@@ -219,7 +293,6 @@ const ENEMY_SCALE = 0.011;
 const ENEMY_FALL_LIMIT_Y = -20;
 
 const LOCK_ON_RANGE = 18;
-
 const PARTICLE_MAX_LIFE = 0.5;
 const COMBO_RESET_TIME = 1.5;
 const CAMERA_SHAKE_DAMP = 6.0;
@@ -308,6 +381,58 @@ const fbxLoader = new FBXLoader();
 const gltfLoader = new GLTFLoader();
 
 // =====================================================
+// AUDIO
+// =====================================================
+const listener = new THREE.AudioListener();
+camera.add(listener);
+
+const audioLoader = new THREE.AudioLoader();
+const audioBuffers = {};
+const unlockedAudio = { ok: false };
+
+function unlockAudio() {
+  if (unlockedAudio.ok) return;
+  unlockedAudio.ok = true;
+}
+window.addEventListener("pointerdown", unlockAudio, { once: true });
+window.addEventListener("keydown", unlockAudio, { once: true });
+
+function loadAudioBuffer(name, path) {
+  return new Promise((resolve) => {
+    audioLoader.load(
+      path,
+      (buffer) => {
+        audioBuffers[name] = buffer;
+        resolve();
+      },
+      undefined,
+      () => resolve()
+    );
+  });
+}
+
+async function loadAudioAssets() {
+  const tasks = Object.entries(AUDIO_FILES).map(([name, path]) => loadAudioBuffer(name, path));
+  await Promise.all(tasks);
+}
+
+function playUISound(name, volume = 0.4, playbackRate = 1) {
+  if (!unlockedAudio.ok) return;
+  const buffer = audioBuffers[name];
+  if (!buffer) return;
+
+  const sound = new THREE.Audio(listener);
+  sound.setBuffer(buffer);
+  sound.setVolume(volume);
+  sound.setPlaybackRate(playbackRate);
+  sound.play();
+
+  setTimeout(() => {
+    try { sound.stop(); } catch {}
+  }, Math.ceil((buffer.duration || 1) * 1000) + 100);
+}
+
+// =====================================================
 // GLOBALS
 // =====================================================
 let character = null;
@@ -365,7 +490,6 @@ const particleMat = new THREE.PointsMaterial({
 
 let comboCount = 0;
 let comboTimer = 0;
-
 let hitFlashTimer = 0;
 let cameraShake = 0;
 let centerMessageTimer = 0;
@@ -376,6 +500,8 @@ let requestedCombatZoom = CAMERA_DISTANCE;
 
 let rightWeaponBone = null;
 let leftWeaponBone = null;
+let footstepTimer = 0;
+let footToggle = false;
 
 const enemyAssets = {
   loaded: false,
@@ -386,6 +512,13 @@ const enemyAssets = {
     attack1: null,
     attack2: null
   }
+};
+
+const game = {
+  score: 0,
+  kills: 0,
+  wave: 1,
+  inDefeat: false
 };
 
 // =====================================================
@@ -416,23 +549,13 @@ const player = {
 // =====================================================
 function loadFBX(url) {
   return new Promise((resolve, reject) => {
-    fbxLoader.load(
-      encodeURI(url),
-      resolve,
-      undefined,
-      (err) => reject({ url, err })
-    );
+    fbxLoader.load(encodeURI(url), resolve, undefined, (err) => reject({ url, err }));
   });
 }
 
 function loadGLTF(url) {
   return new Promise((resolve, reject) => {
-    gltfLoader.load(
-      encodeURI(url),
-      resolve,
-      undefined,
-      (err) => reject({ url, err })
-    );
+    gltfLoader.load(encodeURI(url), resolve, undefined, (err) => reject({ url, err }));
   });
 }
 
@@ -481,8 +604,8 @@ function updateStatusLabel(label) {
   setStatus(`
     Actual: <b>${label}</b><br>
     WASD mover · Shift sprint · Espacio saltar · V esquive<br>
-    1-6 ataques · 7 cubrirse · F ataque rápido · R lock-on<br>
-    Mouse cámara · Q/E zoom · Flechas cámara · N/M niebla · Z/X luz
+    1-6 ataques · 7 cubrirse · F ataque rápido<br>
+    R lock-on · Tab cambiar objetivo · T reiniciar
   `);
 }
 
@@ -513,6 +636,10 @@ function consumePressed(key) {
   return false;
 }
 
+function findAnimMeta(key) {
+  return ANIMS.find((a) => a.key === key) || null;
+}
+
 function spendStamina(amount) {
   if (player.stamina < amount) return false;
   player.stamina = Math.max(0, player.stamina - amount);
@@ -537,20 +664,39 @@ function getEnemyHitPoint(enemy) {
   return p;
 }
 
+function updateGameHUD() {
+  $scoreText.textContent = String(game.score);
+  $killsText.textContent = String(game.kills);
+  $waveText.textContent = String(game.wave);
+}
+
 function updatePlayerHUD() {
   const lifePct = Math.max(0, (player.life / player.maxLife) * 100);
   const staminaPct = Math.max(0, (player.stamina / player.maxStamina) * 100);
 
   $playerLifeBar.style.width = `${lifePct}%`;
   $playerLifeText.textContent = `${Math.ceil(player.life)} / ${player.maxLife}`;
-
   $playerStaminaBar.style.width = `${staminaPct}%`;
   $playerStaminaText.textContent = `${Math.ceil(player.stamina)} / ${player.maxStamina}`;
+}
+
+function updateTargetHUD() {
+  if (!lockedEnemy || lockedEnemy.dead) {
+    targetHUD.style.opacity = "0";
+    return;
+  }
+
+  targetHUD.style.opacity = "1";
+  $targetName.textContent = lockedEnemy.label || "Zombie";
+  const pct = clamp((lockedEnemy.life / lockedEnemy.maxLife) * 100, 0, 100);
+  $targetLifeBar.style.width = `${pct}%`;
+  $targetLifeText.textContent = `${Math.ceil(Math.max(0, lockedEnemy.life))} / ${lockedEnemy.maxLife}`;
 }
 
 function updateEnemyHUD() {
   const alive = enemies.filter((e) => !e.dead).length;
   $enemyCounter.textContent = `Enemigos vivos: ${alive}`;
+  updateTargetHUD();
 
   if (!combatWon && alive === 0 && enemies.length > 0) {
     combatWon = true;
@@ -558,12 +704,22 @@ function updateEnemyHUD() {
     victoryBanner.style.transform = "translate(-50%, -50%) scale(1)";
     triggerCameraShake(0.2);
     slowMotion(0.16, 0.35);
-    showCenterMessage("FINISH", 0.7);
+    showCenterMessage(`WAVE ${game.wave} COMPLETA`, 0.9);
+    playUISound("victory", 0.45);
+
+    setTimeout(() => {
+      victoryBanner.style.opacity = "0";
+      victoryBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
+      game.wave += 1;
+      updateGameHUD();
+      startNextWave();
+    }, 1800);
   }
 }
 
 function updateLockHUD() {
   $lockOnText.textContent = `Lock-on: ${lockedEnemy && !lockedEnemy.dead ? "sí" : "no"}`;
+  updateTargetHUD();
 }
 
 function triggerHitFlash() {
@@ -692,7 +848,7 @@ function getTrailAnchorWorldPosition(out = new THREE.Vector3()) {
 }
 
 // =====================================================
-// PARTICLES / TEXTS
+// PARTICLES / DAMAGE TEXT
 // =====================================================
 function spawnImpactParticles(position, dir, count = 16, multiplier = 1) {
   for (let i = 0; i < count; i++) {
@@ -914,7 +1070,7 @@ async function loadScenario() {
 }
 
 // =====================================================
-// ANIMACIONES PLAYER
+// PLAYER ANIMS
 // =====================================================
 function beginAttack(meta) {
   activeAttack = {
@@ -927,6 +1083,7 @@ function beginAttack(meta) {
     coneDeg: meta.coneDeg ?? 95,
     knockback: meta.knockback ?? 3.5,
     trailSize: meta.trailSize ?? 1,
+    score: meta.score ?? 10,
     hitIds: new Set(),
     trailTimer: 0
   };
@@ -1032,7 +1189,7 @@ function hookAnimationFinished() {
 }
 
 // =====================================================
-// BOTONES
+// BUTTONS
 // =====================================================
 function buildButtons() {
   if (!$buttons) return;
@@ -1070,7 +1227,7 @@ function buildButtons() {
       if (actionLocked) {
         if (canQueueCombo()) queuedActionKey = key;
       } else {
-        const meta = ANIMS.find((a) => a.key === key);
+        const meta = findAnimMeta(key);
         if (!meta || spendStamina(meta.staminaCost ?? 0)) {
           playAnimation(key);
         }
@@ -1081,7 +1238,7 @@ function buildButtons() {
 }
 
 // =====================================================
-// COLISIONES PLAYER
+// COLLISIONS PLAYER
 // =====================================================
 function playerCollisions() {
   const result = worldOctree.capsuleIntersect(playerCollider);
@@ -1094,10 +1251,7 @@ function playerCollisions() {
     if (playerOnFloor) {
       playerVelocity.y = 0;
     } else {
-      playerVelocity.addScaledVector(
-        result.normal,
-        -result.normal.dot(playerVelocity)
-      );
+      playerVelocity.addScaledVector(result.normal, -result.normal.dot(playerVelocity));
     }
 
     playerCollider.translate(result.normal.multiplyScalar(result.depth));
@@ -1250,7 +1404,7 @@ function movePlayerHorizontal(deltaTime) {
 // DODGE
 // =====================================================
 function tryStartDodge() {
-  const meta = ANIMS.find((a) => a.key === DODGE_KEY);
+  const meta = findAnimMeta(DODGE_KEY);
   if (!meta) return false;
   if (player.dodgeCooldown > 0) return false;
   if (!playerOnFloor) return false;
@@ -1273,6 +1427,7 @@ function tryStartDodge() {
 
   playAnimation(DODGE_KEY, 0.06, true);
   showCenterMessage("DODGE", 0.2);
+  playUISound("dodge", 0.35);
   return true;
 }
 
@@ -1283,7 +1438,7 @@ function updateDodge(dt) {
 
   if (!player.dodging) return;
 
-  const meta = ANIMS.find((a) => a.key === DODGE_KEY);
+  const meta = findAnimMeta(DODGE_KEY);
   player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);
   player.iframeTimer += dt;
 
@@ -1299,13 +1454,13 @@ function updateDodge(dt) {
 
 function isPlayerInIFrames() {
   if (!player.dodging) return false;
-  const meta = ANIMS.find((a) => a.key === DODGE_KEY);
+  const meta = findAnimMeta(DODGE_KEY);
   if (!meta) return false;
   return player.iframeTimer >= (meta.iframeStart ?? 0.05) && player.iframeTimer <= (meta.iframeEnd ?? 0.2);
 }
 
 // =====================================================
-// COMBATE PLAYER
+// PLAYER COMBAT
 // =====================================================
 function getAttackProgress() {
   if (!activeAttack || !currentAction) return 0;
@@ -1315,11 +1470,17 @@ function getAttackProgress() {
 }
 
 function pulseEnemy(enemy, scale = 1.12, duration = 0.09) {
-  enemy.hitPulse = {
-    timer: duration,
-    duration,
-    scale
-  };
+  enemy.hitPulse = { timer: duration, duration, scale };
+}
+
+function addScore(value) {
+  game.score += value;
+  updateGameHUD();
+}
+
+function registerKill() {
+  game.kills += 1;
+  updateGameHUD();
 }
 
 function damageEnemy(enemy, damage, knockbackDir) {
@@ -1344,9 +1505,12 @@ function damageEnemy(enemy, damage, knockbackDir) {
   slowMotion(willDie ? 0.12 : 0.065, willDie ? 0.34 : 0.48);
 
   spawnDamageText(`-${damage}`, hitPos.clone().add(new THREE.Vector3(0, 0.6, 0)), willDie);
+  playUISound("hit", willDie ? 0.45 : 0.32, 0.95 + Math.random() * 0.1);
+  addScore(activeAttack?.score ?? 10);
 
   if (willDie) {
     spawnFinisherBurst(hitPos, knockbackDir);
+    playUISound("death", 0.45);
   }
 
   if (enemy.life <= 0) {
@@ -1361,6 +1525,9 @@ function damageEnemy(enemy, damage, knockbackDir) {
 
     enemy.group.visible = false;
 
+    registerKill();
+    addScore(100);
+
     if (lockedEnemy === enemy) {
       lockedEnemy = null;
       updateLockHUD();
@@ -1368,6 +1535,8 @@ function damageEnemy(enemy, damage, knockbackDir) {
 
     updateEnemyHUD();
   }
+
+  updateTargetHUD();
 }
 
 function updateAttackTrails(dt) {
@@ -1469,6 +1638,7 @@ function damagePlayer(amount) {
   if (holdBlockRequested || currentActionKey === BLOCK_KEY) {
     amount *= 0.25;
     showCenterMessage("BLOCK", 0.2);
+    playUISound("block", 0.36);
   }
 
   player.life = Math.max(0, player.life - amount);
@@ -1477,20 +1647,62 @@ function damagePlayer(amount) {
   triggerHitFlash();
   updatePlayerHUD();
 
-  if (player.life <= 0) {
-    showCenterMessage("DERROTA", 0.9);
-    player.life = player.maxLife;
-    player.stamina = player.maxStamina;
-    player.exhausted = false;
-    player.staminaCooldown = 0;
-    comboCount = 0;
-    comboTimer = 0;
-    comboUI.style.opacity = "0";
-    updatePlayerHUD();
+  if (player.life <= 0 && !game.inDefeat) {
+    triggerDefeat();
+  }
+}
 
-    playerCollider.start.set(0, PLAYER_RADIUS + 0.05, 0);
-    playerCollider.end.set(0, PLAYER_HEIGHT + 0.05, 0);
-    playerVelocity.set(0, 0, 0);
+function triggerDefeat() {
+  game.inDefeat = true;
+  showCenterMessage("PRESIONA T PARA REINICIAR", 3);
+  defeatBanner.style.opacity = "1";
+  defeatBanner.style.transform = "translate(-50%, -50%) scale(1)";
+}
+
+function resetGame() {
+  game.score = 0;
+  game.kills = 0;
+  game.wave = 1;
+  game.inDefeat = false;
+  combatWon = false;
+
+  victoryBanner.style.opacity = "0";
+  victoryBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
+  defeatBanner.style.opacity = "0";
+  defeatBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
+
+  comboCount = 0;
+  comboTimer = 0;
+  comboUI.style.opacity = "0";
+
+  player.life = player.maxLife;
+  player.stamina = player.maxStamina;
+  player.exhausted = false;
+  player.staminaCooldown = 0;
+  player.invulTime = 0;
+  player.dodgeCooldown = 0;
+  player.dodging = false;
+  player.dodgeTimer = 0;
+  player.iframeTimer = 0;
+
+  playerCollider.start.set(0, PLAYER_RADIUS + 0.05, 0);
+  playerCollider.end.set(0, PLAYER_HEIGHT + 0.05, 0);
+  playerVelocity.set(0, 0, 0);
+
+  lockedEnemy = null;
+  updateLockHUD();
+  updatePlayerHUD();
+  updateGameHUD();
+
+  clearAllEnemies();
+  startNextWave(true);
+}
+
+function clearAllEnemies() {
+  while (enemies.length > 0) {
+    const e = enemies.pop();
+    if (e.lifeWrap?.parentNode) e.lifeWrap.remove();
+    scene.remove(e.group);
   }
 }
 
@@ -1516,6 +1728,42 @@ function findNearestEnemy() {
   return best;
 }
 
+function getAliveEnemiesSortedByAngle() {
+  if (!character) return [];
+  const origin = character.position.clone();
+  const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
+
+  return enemies
+    .filter((e) => !e.dead && e.group.position.distanceTo(origin) < LOCK_ON_RANGE)
+    .map((e) => {
+      const dir = e.group.position.clone().sub(origin).setY(0).normalize();
+      const angle = Math.atan2(dir.x, dir.z) - Math.atan2(forward.x, forward.z);
+      return { enemy: e, angle };
+    })
+    .sort((a, b) => a.angle - b.angle)
+    .map((x) => x.enemy);
+}
+
+function switchLockTarget() {
+  const list = getAliveEnemiesSortedByAngle();
+  if (list.length === 0) {
+    lockedEnemy = null;
+    updateLockHUD();
+    return;
+  }
+
+  if (!lockedEnemy || lockedEnemy.dead) {
+    lockedEnemy = list[0];
+  } else {
+    const idx = list.indexOf(lockedEnemy);
+    lockedEnemy = list[(idx + 1 + list.length) % list.length];
+  }
+
+  updateLockHUD();
+  showCenterMessage("TARGET SWITCH", 0.18);
+  playUISound("switch", 0.3);
+}
+
 function toggleLockOn() {
   if (lockedEnemy && !lockedEnemy.dead) {
     lockedEnemy = null;
@@ -1526,7 +1774,7 @@ function toggleLockOn() {
 }
 
 // =====================================================
-// ENEMY ASSETS
+// ENEMIES
 // =====================================================
 async function loadEnemyAssets() {
   setStatus("Cargando zombies...");
@@ -1591,7 +1839,7 @@ function createEnemyLifeUI() {
   return { lifeWrap, lifeBar };
 }
 
-function createEnemy(x, z) {
+function createEnemy(x, z, label = "Zombie") {
   const group = new THREE.Group();
   scene.add(group);
 
@@ -1610,6 +1858,7 @@ function createEnemy(x, z) {
   const ui = createEnemyLifeUI();
 
   const enemy = {
+    label,
     group,
     model,
     mixer,
@@ -1626,8 +1875,8 @@ function createEnemy(x, z) {
     velocity: new THREE.Vector3(),
     onFloor: false,
 
-    life: 60,
-    maxLife: 60,
+    life: 60 + (game.wave - 1) * 8,
+    maxLife: 60 + (game.wave - 1) * 8,
     dead: false,
     hitCooldown: 0,
     stunTimer: 0,
@@ -1653,22 +1902,25 @@ function createEnemy(x, z) {
   return enemy;
 }
 
-function spawnEnemies() {
-  const positions = [
-    [-5, -4],
-    [4, -5],
-    [6, 3],
-    [-7, 5],
-    [2, 8],
-    [-3, 9]
-  ];
+function startNextWave(skipBanner = false) {
+  combatWon = false;
 
-  for (let i = 0; i < ENEMY_COUNT; i++) {
-    const p = positions[i % positions.length];
-    enemies.push(createEnemy(p[0], p[1]));
+  const count = ENEMY_BASE_COUNT + (game.wave - 1);
+  const radius = 7 + Math.min(game.wave, 4);
+  const angleStep = (Math.PI * 2) / count;
+
+  for (let i = 0; i < count; i++) {
+    const a = i * angleStep;
+    const x = Math.cos(a) * radius + (Math.random() - 0.5) * 1.5;
+    const z = Math.sin(a) * radius + (Math.random() - 0.5) * 1.5;
+    enemies.push(createEnemy(x, z, `Zombie ${i + 1}`));
   }
 
   updateEnemyHUD();
+
+  if (!skipBanner) {
+    showCenterMessage(`WAVE ${game.wave}`, 1.0);
+  }
 }
 
 function enemyCollisions(enemy) {
@@ -1682,10 +1934,7 @@ function enemyCollisions(enemy) {
     if (enemy.onFloor) {
       enemy.velocity.y = 0;
     } else {
-      enemy.velocity.addScaledVector(
-        result.normal,
-        -result.normal.dot(enemy.velocity)
-      );
+      enemy.velocity.addScaledVector(result.normal, -result.normal.dot(enemy.velocity));
     }
 
     enemy.capsule.translate(result.normal.multiplyScalar(result.depth));
@@ -1753,7 +2002,7 @@ function updateEnemyAttack(enemy, dt, distToPlayer) {
   ) {
     const attackKey = Math.random() > 0.5 ? "attack1" : "attack2";
     playEnemyAction(enemy, attackKey);
-    enemy.attackCooldown = ENEMY_ATTACK_COOLDOWN;
+    enemy.attackCooldown = ENEMY_ATTACK_COOLDOWN * Math.max(0.75, 1 - game.wave * 0.03);
     enemy.attackTimer = 0;
     enemy.attackDidDamage = false;
   }
@@ -1762,7 +2011,7 @@ function updateEnemyAttack(enemy, dt, distToPlayer) {
     enemy.attackTimer += dt;
 
     if (!enemy.attackDidDamage && enemy.attackTimer >= 0.45 && distToPlayer <= ENEMY_ATTACK_RANGE + 0.25) {
-      damagePlayer(ENEMY_CONTACT_DAMAGE);
+      damagePlayer(ENEMY_CONTACT_DAMAGE + Math.floor((game.wave - 1) * 1.2));
       enemy.attackDidDamage = true;
     }
   }
@@ -1786,7 +2035,7 @@ function updateEnemyVisualEffects(enemy, dt) {
 }
 
 function updateEnemies(dt) {
-  if (!character) return;
+  if (!character || game.inDefeat) return;
 
   const playerPos = character.position.clone();
 
@@ -1816,7 +2065,7 @@ function updateEnemies(dt) {
 
     if (enemy.stunTimer <= 0) {
       if (!isAttacking && dist < ENEMY_DETECT_RANGE && dist > ENEMY_ATTACK_RANGE) {
-        enemy.velocity.addScaledVector(flat, ENEMY_SPEED * dt);
+        enemy.velocity.addScaledVector(flat, (ENEMY_SPEED + game.wave * 0.04) * dt);
 
         if (Math.random() < 0.018) {
           const strafe = new THREE.Vector3(-flat.z, 0, flat.x).normalize();
@@ -1860,6 +2109,7 @@ function updateEnemies(dt) {
   }
 
   updateEnemyBillboards();
+  updateTargetHUD();
 }
 
 // =====================================================
@@ -1892,7 +2142,7 @@ function updateStamina(dt) {
 }
 
 function tryPlayAttackByKey(key) {
-  const meta = ANIMS.find((a) => a.key === key);
+  const meta = findAnimMeta(key);
   if (!meta) return;
 
   if (actionLocked) {
@@ -1942,6 +2192,22 @@ function updatePlayerFacing(dt) {
   }
 }
 
+function updateFootsteps(dt, moving, sprinting) {
+  if (!moving || !playerOnFloor || player.dodging || actionLocked) {
+    footstepTimer = 0;
+    return;
+  }
+
+  footstepTimer -= dt;
+  const interval = sprinting ? 0.26 : 0.4;
+
+  if (footstepTimer <= 0) {
+    footstepTimer = interval;
+    playUISound(footToggle ? "step1" : "step2", sprinting ? 0.16 : 0.12, sprinting ? 1.05 : 0.95);
+    footToggle = !footToggle;
+  }
+}
+
 function updatePlayer(deltaTime) {
   if (!character) return;
 
@@ -1953,6 +2219,17 @@ function updatePlayer(deltaTime) {
   if (consumePressed("r")) {
     toggleLockOn();
   }
+
+  if (consumePressed("tab")) {
+    switchLockTarget();
+  }
+
+  if (consumePressed("t")) {
+    resetGame();
+    return;
+  }
+
+  if (game.inDefeat) return;
 
   player.invulTime = Math.max(0, player.invulTime - deltaTime);
   updateStamina(deltaTime);
@@ -1983,8 +2260,9 @@ function updatePlayer(deltaTime) {
 
   updateDodge(deltaTime);
 
+  let moved = false;
   if (!player.dodging) {
-    movePlayerHorizontal(deltaTime);
+    moved = movePlayerHorizontal(deltaTime);
   }
 
   tempVector.copy(playerVelocity).multiplyScalar(deltaTime);
@@ -2017,6 +2295,9 @@ function updatePlayer(deltaTime) {
   updatePlayerFacing(deltaTime);
   updateAttackHits(deltaTime);
 
+  const sprinting = isSprinting();
+  updateFootsteps(deltaTime, moved, sprinting);
+
   if (!playerOnFloor && playerVelocity.y < -2) {
     if (currentActionKey !== JUMP_KEY) playAnimation(JUMP_KEY, 0.08, true);
     return;
@@ -2033,12 +2314,9 @@ function updatePlayer(deltaTime) {
     return;
   }
 
-  const sprinting = isSprinting();
-  const moving = !!getInputMoveDirection();
-
-  if (moving && sprinting) {
+  if (moved && sprinting) {
     playAnimation(RUN_KEY);
-  } else if (moving) {
+  } else if (moved) {
     playAnimation(WALK_KEY);
   } else {
     playAnimation(IDLE_KEY);
@@ -2046,7 +2324,7 @@ function updatePlayer(deltaTime) {
 }
 
 // =====================================================
-// CÁMARA
+// CAMERA
 // =====================================================
 function resolveCameraCollision(origin, desired) {
   const dir = desired.clone().sub(origin);
@@ -2164,7 +2442,7 @@ function updateCameraKeyboard(dt) {
 }
 
 // =====================================================
-// ENTORNO
+// ENVIRONMENT KEYS
 // =====================================================
 function handleEnvironmentKeys(e) {
   switch (e.key.toLowerCase()) {
@@ -2188,7 +2466,7 @@ function handleEnvironmentKeys(e) {
 }
 
 // =====================================================
-// CARGA PLAYER CON PROMISE.ALL
+// LOAD PLAYER + ANIMS
 // =====================================================
 async function loadPlayerAndAnimations() {
   setStatus("Cargando personaje y animaciones...");
@@ -2238,6 +2516,7 @@ async function loadPlayerAndAnimations() {
 async function init() {
   buildButtons();
   updatePlayerHUD();
+  updateGameHUD();
   updateLockHUD();
 
   setStatus("Cargando escenario...");
@@ -2272,10 +2551,12 @@ async function init() {
     throw err;
   }
 
+  await loadAudioAssets();
+
   playerCollider.start.set(0, PLAYER_RADIUS + 0.05, 0);
   playerCollider.end.set(0, PLAYER_HEIGHT + 0.05, 0);
 
-  spawnEnemies();
+  startNextWave(true);
   playAnimation(IDLE_KEY, 0.01, true);
 
   window.addEventListener("keydown", (e) => {
