@@ -7,7 +7,7 @@ import { Capsule } from "three/addons/math/Capsule.js";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 
 // =====================================================
-// UI
+// UI BASE
 // =====================================================
 const $status = document.getElementById("status");
 const $buttons = document.getElementById("buttons");
@@ -25,20 +25,24 @@ function showError(msg) {
   console.error(msg);
 }
 
+// =====================================================
+// HUD
+// =====================================================
 const hud = document.createElement("div");
 hud.style.position = "fixed";
 hud.style.top = "12px";
 hud.style.right = "12px";
-hud.style.width = "270px";
-hud.style.padding = "10px 12px";
-hud.style.borderRadius = "12px";
-hud.style.background = "rgba(10,16,30,0.85)";
+hud.style.width = "290px";
+hud.style.padding = "12px 14px";
+hud.style.borderRadius = "14px";
+hud.style.background = "rgba(10,16,30,0.86)";
 hud.style.color = "#fff";
 hud.style.fontFamily = "Arial, sans-serif";
 hud.style.fontSize = "13px";
 hud.style.zIndex = "999";
+hud.style.boxShadow = "0 10px 30px rgba(0,0,0,.35)";
 hud.innerHTML = `
-  <div style="font-weight:700;margin-bottom:8px;">Estado del combate</div>
+  <div style="font-weight:700;margin-bottom:8px;font-size:15px;">Estado del combate</div>
 
   <div>Vida jugador</div>
   <div style="height:12px;background:#2b3550;border-radius:999px;overflow:hidden;margin:6px 0 6px;">
@@ -57,32 +61,64 @@ hud.innerHTML = `
 `;
 document.body.appendChild(hud);
 
+const comboUI = document.createElement("div");
+comboUI.style.position = "fixed";
+comboUI.style.left = "50%";
+comboUI.style.top = "18%";
+comboUI.style.transform = "translateX(-50%) scale(0.9)";
+comboUI.style.padding = "10px 18px";
+comboUI.style.borderRadius = "999px";
+comboUI.style.background = "rgba(255,255,255,0.08)";
+comboUI.style.backdropFilter = "blur(8px)";
+comboUI.style.color = "#fff";
+comboUI.style.fontFamily = "Arial, sans-serif";
+comboUI.style.fontWeight = "900";
+comboUI.style.fontSize = "24px";
+comboUI.style.letterSpacing = "1px";
+comboUI.style.opacity = "0";
+comboUI.style.pointerEvents = "none";
+comboUI.style.zIndex = "1001";
+comboUI.style.transition = "opacity 0.14s ease, transform 0.14s ease";
+comboUI.textContent = "COMBO x1";
+document.body.appendChild(comboUI);
+
+const hitFlash = document.createElement("div");
+hitFlash.style.position = "fixed";
+hitFlash.style.inset = "0";
+hitFlash.style.background = "radial-gradient(circle, rgba(255,255,255,.22) 0%, rgba(255,255,255,.08) 22%, rgba(255,255,255,0) 58%)";
+hitFlash.style.opacity = "0";
+hitFlash.style.pointerEvents = "none";
+hitFlash.style.zIndex = "1000";
+hitFlash.style.transition = "opacity 0.08s linear";
+document.body.appendChild(hitFlash);
+
+const victoryBanner = document.createElement("div");
+victoryBanner.style.position = "fixed";
+victoryBanner.style.left = "50%";
+victoryBanner.style.top = "50%";
+victoryBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
+victoryBanner.style.padding = "20px 32px";
+victoryBanner.style.borderRadius = "18px";
+victoryBanner.style.background = "rgba(14,20,38,.92)";
+victoryBanner.style.color = "#fff";
+victoryBanner.style.fontFamily = "Arial, sans-serif";
+victoryBanner.style.fontWeight = "900";
+victoryBanner.style.fontSize = "34px";
+victoryBanner.style.letterSpacing = "1px";
+victoryBanner.style.boxShadow = "0 20px 50px rgba(0,0,0,.4)";
+victoryBanner.style.opacity = "0";
+victoryBanner.style.pointerEvents = "none";
+victoryBanner.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+victoryBanner.style.zIndex = "1002";
+victoryBanner.textContent = "VICTORIA";
+document.body.appendChild(victoryBanner);
+
 const $playerLifeBar = document.getElementById("playerLifeBar");
 const $playerLifeText = document.getElementById("playerLifeText");
 const $playerStaminaBar = document.getElementById("playerStaminaBar");
 const $playerStaminaText = document.getElementById("playerStaminaText");
 const $enemyCounter = document.getElementById("enemyCounter");
 const $lockOnText = document.getElementById("lockOnText");
-
-function updatePlayerHUD() {
-  const lifePct = Math.max(0, (player.life / player.maxLife) * 100);
-  const staminaPct = Math.max(0, (player.stamina / player.maxStamina) * 100);
-
-  $playerLifeBar.style.width = `${lifePct}%`;
-  $playerLifeText.textContent = `${Math.ceil(player.life)} / ${player.maxLife}`;
-
-  $playerStaminaBar.style.width = `${staminaPct}%`;
-  $playerStaminaText.textContent = `${Math.ceil(player.stamina)} / ${player.maxStamina}`;
-}
-
-function updateEnemyHUD() {
-  const alive = enemies.filter((e) => !e.dead).length;
-  $enemyCounter.textContent = `Enemigos vivos: ${alive}`;
-}
-
-function updateLockHUD() {
-  $lockOnText.textContent = `Lock-on: ${lockedEnemy && !lockedEnemy.dead ? "sí" : "no"}`;
-}
 
 // =====================================================
 // CONFIG
@@ -91,7 +127,6 @@ const BASE_CHARACTER = "assets/models/Paladin WProp J Nordstrom.fbx";
 const SCENARIO_FILE = "assets/scenarios/castle/scene.gltf";
 const COLLISION_FILE = "assets/models/collision-world.glb";
 
-// ENEMIGOS FBX
 const ENEMY_MODEL_FILE = "assets/models/enemies/Ch10_nonPBR.fbx";
 const ENEMY_ATTACK_FILE = "assets/models/enemies/Zombie Attack.fbx";
 const ENEMY_ATTACK_FILE_2 = "assets/models/enemies/Zombie Punching.fbx";
@@ -102,15 +137,15 @@ const ANIMS = [
   { key: "run", name: "Run", file: "assets/models/Unarmed Run Forward.fbx", type: "run" },
   { key: "jump", name: "Jump", file: "assets/models/Jumping Up.fbx", type: "jump" },
 
-  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.2, hitStart: 0.18, hitEnd: 0.52, staminaCost: 10 },
-  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 1.9, hitStart: 0.16, hitEnd: 0.48, staminaCost: 9 },
-  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 1.6, hitStart: 0.08, hitEnd: 0.30, staminaCost: 8 },
-  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 1.8, hitStart: 0.12, hitEnd: 0.42, staminaCost: 9 },
-  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 1.8, hitStart: 0.14, hitEnd: 0.44, staminaCost: 9 },
-  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.1, hitStart: 0.20, hitEnd: 0.58, staminaCost: 12 },
+  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.55, hitStart: 0.14, hitEnd: 0.60, staminaCost: 10, coneDeg: 95, knockback: 4.1 },
+  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 2.35, hitStart: 0.12, hitEnd: 0.56, staminaCost: 9, coneDeg: 92, knockback: 3.8 },
+  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 2.1, hitStart: 0.06, hitEnd: 0.34, staminaCost: 8, coneDeg: 110, knockback: 3.2 },
+  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 2.25, hitStart: 0.08, hitEnd: 0.47, staminaCost: 9, coneDeg: 105, knockback: 3.6 },
+  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 2.2, hitStart: 0.11, hitEnd: 0.49, staminaCost: 9, coneDeg: 105, knockback: 3.4 },
+  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.65, hitStart: 0.17, hitEnd: 0.66, staminaCost: 12, coneDeg: 88, knockback: 5.0 },
 
   { key: "7", name: "Block", file: "assets/models/Sword And Shield Crouch Block Idle.fbx", type: "blockHold" },
-  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 1.5, hitStart: 0.08, hitEnd: 0.28, staminaCost: 7 }
+  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 2.0, hitStart: 0.05, hitEnd: 0.33, staminaCost: 7, coneDeg: 120, knockback: 3.0 }
 ];
 
 const IDLE_KEY = "idle";
@@ -126,10 +161,10 @@ const PLAYER_RADIUS = 0.35;
 const PLAYER_MODEL_VISUAL_HEIGHT = 1.8;
 
 const GRAVITY = 30;
-const WALK_SPEED = 4.8;
-const RUN_SPEED = 8.6;
-const ATTACK_MOVE_SPEED = 2.2;
-const BLOCK_MOVE_SPEED = 1.25;
+const WALK_SPEED = 4.9;
+const RUN_SPEED = 8.25;
+const ATTACK_MOVE_SPEED = 2.25;
+const BLOCK_MOVE_SPEED = 1.2;
 const JUMP_SPEED = 11;
 
 const CAMERA_HEIGHT = 1.25;
@@ -140,7 +175,7 @@ const TARGET_LERP = 0.18;
 const CAMERA_WALL_OFFSET = 0.22;
 const CAMERA_LOCK_HEIGHT = 1.7;
 const CAMERA_NORMAL_HEIGHT = 1.8;
-const CAMERA_LOCK_DISTANCE = 4.3;
+const CAMERA_LOCK_DISTANCE = 4.15;
 
 const FALL_LIMIT_Y = -20;
 const STEP_HEIGHT = 0.25;
@@ -156,10 +191,14 @@ const ENEMY_SEPARATION_DISTANCE = 1.4;
 const ENEMY_SEPARATION_FORCE = 2.2;
 const ENEMY_HEIGHT = 1.75;
 const ENEMY_RADIUS = 0.32;
-const ENEMY_SCALE = 0.011; // AJUSTA si quieres más grande o más chico
+const ENEMY_SCALE = 0.011;
 const ENEMY_FALL_LIMIT_Y = -20;
 
 const LOCK_ON_RANGE = 18;
+
+const PARTICLE_MAX_LIFE = 0.42;
+const COMBO_RESET_TIME = 1.5;
+const CAMERA_SHAKE_DAMP = 6.0;
 
 // =====================================================
 // THREE SETUP
@@ -284,8 +323,24 @@ const cameraDesired = new THREE.Vector3();
 let activeAttack = null;
 const enemies = [];
 let lockedEnemy = null;
+let combatWon = false;
 
-// enemy shared assets
+const particles = [];
+const particleGeo = new THREE.BufferGeometry();
+particleGeo.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0], 3));
+const particleMat = new THREE.PointsMaterial({
+  size: 0.12,
+  transparent: true,
+  opacity: 1,
+  depthWrite: false
+});
+
+let comboCount = 0;
+let comboTimer = 0;
+
+let hitFlashTimer = 0;
+let cameraShake = 0;
+
 const enemyAssets = {
   loaded: false,
   model: null,
@@ -429,6 +484,126 @@ function hasMovementInput() {
   return !!(keys["w"] || keys["a"] || keys["s"] || keys["d"]);
 }
 
+function getEnemyHitPoint(enemy) {
+  const p = enemy.group.position.clone();
+  p.y += 0.95;
+  return p;
+}
+
+function updatePlayerHUD() {
+  const lifePct = Math.max(0, (player.life / player.maxLife) * 100);
+  const staminaPct = Math.max(0, (player.stamina / player.maxStamina) * 100);
+
+  $playerLifeBar.style.width = `${lifePct}%`;
+  $playerLifeText.textContent = `${Math.ceil(player.life)} / ${player.maxLife}`;
+
+  $playerStaminaBar.style.width = `${staminaPct}%`;
+  $playerStaminaText.textContent = `${Math.ceil(player.stamina)} / ${player.maxStamina}`;
+}
+
+function updateEnemyHUD() {
+  const alive = enemies.filter((e) => !e.dead).length;
+  $enemyCounter.textContent = `Enemigos vivos: ${alive}`;
+
+  if (!combatWon && alive === 0 && enemies.length > 0) {
+    combatWon = true;
+    victoryBanner.style.opacity = "1";
+    victoryBanner.style.transform = "translate(-50%, -50%) scale(1)";
+  }
+}
+
+function updateLockHUD() {
+  $lockOnText.textContent = `Lock-on: ${lockedEnemy && !lockedEnemy.dead ? "sí" : "no"}`;
+}
+
+function triggerHitFlash() {
+  hitFlashTimer = 0.08;
+  hitFlash.style.opacity = "1";
+}
+
+function triggerCameraShake(amount = 0.12) {
+  cameraShake = Math.max(cameraShake, amount);
+}
+
+function registerCombo() {
+  comboCount += 1;
+  comboTimer = COMBO_RESET_TIME;
+
+  comboUI.textContent = `COMBO x${comboCount}`;
+  comboUI.style.opacity = "1";
+  comboUI.style.transform = "translateX(-50%) scale(1.05)";
+
+  setTimeout(() => {
+    comboUI.style.transform = "translateX(-50%) scale(1)";
+  }, 60);
+}
+
+function updateCombo(dt) {
+  comboTimer = Math.max(0, comboTimer - dt);
+
+  if (comboTimer <= 0 && comboCount > 0) {
+    comboCount = 0;
+    comboUI.style.opacity = "0";
+    comboUI.style.transform = "translateX(-50%) scale(0.9)";
+  }
+}
+
+function updateEffects(dt) {
+  if (hitFlashTimer > 0) {
+    hitFlashTimer -= dt;
+    if (hitFlashTimer <= 0) hitFlash.style.opacity = "0";
+  }
+
+  cameraShake = Math.max(0, cameraShake - dt * CAMERA_SHAKE_DAMP);
+}
+
+// =====================================================
+// PARTICLES
+// =====================================================
+function spawnImpactParticles(position, dir, count = 14) {
+  for (let i = 0; i < count; i++) {
+    const vel = new THREE.Vector3(
+      (Math.random() - 0.5) * 3.2 + dir.x * 1.2,
+      Math.random() * 2.6 + 0.4,
+      (Math.random() - 0.5) * 3.2 + dir.z * 1.2
+    );
+
+    const sprite = new THREE.Points(particleGeo, particleMat.clone());
+    sprite.position.copy(position);
+    sprite.material.size = 0.08 + Math.random() * 0.12;
+    sprite.material.opacity = 1;
+    scene.add(sprite);
+
+    particles.push({
+      mesh: sprite,
+      velocity: vel,
+      life: PARTICLE_MAX_LIFE * (0.8 + Math.random() * 0.4),
+      maxLife: PARTICLE_MAX_LIFE
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life -= dt;
+
+    if (p.life <= 0) {
+      scene.remove(p.mesh);
+      p.mesh.material.dispose();
+      particles.splice(i, 1);
+      continue;
+    }
+
+    p.velocity.y -= 8.5 * dt;
+    p.mesh.position.addScaledVector(p.velocity, dt);
+
+    const alpha = clamp(p.life / p.maxLife, 0, 1);
+    p.mesh.material.opacity = alpha;
+    p.mesh.scale.setScalar(0.7 + (1 - alpha) * 0.8);
+  }
+}
+
 // =====================================================
 // ESCENARIO
 // =====================================================
@@ -492,7 +667,9 @@ function beginAttack(meta) {
     hitStart: meta.hitStart ?? 0.12,
     hitEnd: meta.hitEnd ?? 0.34,
     staminaCost: meta.staminaCost ?? 0,
-    hasHit: false
+    coneDeg: meta.coneDeg ?? 95,
+    knockback: meta.knockback ?? 3.5,
+    hitIds: new Set()
   };
 }
 
@@ -508,7 +685,7 @@ function canQueueCombo() {
   if (!clip || clip.duration <= 0) return false;
 
   const progress = currentAction.time / clip.duration;
-  return progress >= 0.35 && progress <= 0.95;
+  return progress >= 0.32 && progress <= 0.95;
 }
 
 function playAnimation(key, fade = 0.12, force = false) {
@@ -783,7 +960,7 @@ function movePlayerHorizontal(deltaTime) {
 
   if (!lockedEnemy || lockedEnemy.dead) {
     const targetAngle = Math.atan2(moveDir.x, moveDir.z);
-    character.rotation.y = angleLerp(character.rotation.y, targetAngle, 0.2);
+    character.rotation.y = angleLerp(character.rotation.y, targetAngle, 0.24);
   }
 
   return true;
@@ -803,10 +980,17 @@ function damageEnemy(enemy, damage, knockbackDir) {
   if (enemy.dead) return;
 
   enemy.life -= damage;
-  enemy.hitCooldown = 0.25;
-  enemy.velocity.addScaledVector(knockbackDir, 3.6);
+  enemy.hitCooldown = 0.28;
+  enemy.stunTimer = 0.22;
+  enemy.velocity.addScaledVector(knockbackDir, activeAttack?.knockback ?? 3.8);
 
   enemy.lifeBar.style.width = `${clamp((enemy.life / enemy.maxLife) * 100, 0, 100)}%`;
+
+  const hitPos = getEnemyHitPoint(enemy);
+  spawnImpactParticles(hitPos, knockbackDir, 15);
+  triggerHitFlash();
+  triggerCameraShake(0.1);
+  registerCombo();
 
   if (enemy.life <= 0) {
     enemy.dead = true;
@@ -830,41 +1014,72 @@ function damageEnemy(enemy, damage, knockbackDir) {
 }
 
 function updateAttackHits() {
-  if (!activeAttack || !character || activeAttack.hasHit) return;
+  if (!activeAttack || !character) return;
 
   const progress = getAttackProgress();
   if (progress < activeAttack.hitStart || progress > activeAttack.hitEnd) return;
 
   const playerPos = character.position.clone();
+
+  if (lockedEnemy && !lockedEnemy.dead) {
+    const dirToLocked = lockedEnemy.group.position.clone().sub(playerPos);
+    dirToLocked.y = 0;
+    if (dirToLocked.lengthSq() > 0.0001) {
+      dirToLocked.normalize();
+      const a = Math.atan2(dirToLocked.x, dirToLocked.z);
+      character.rotation.y = angleLerp(character.rotation.y, a, 0.36);
+    }
+  }
+
   const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
+  const halfConeRad = THREE.MathUtils.degToRad(activeAttack.coneDeg * 0.5);
 
   let bestEnemy = null;
   let bestScore = -Infinity;
 
-  for (const enemy of enemies) {
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i];
     if (enemy.dead) continue;
+    if (activeAttack.hitIds.has(i)) continue;
 
-    const toEnemy = enemy.group.position.clone().sub(playerPos);
-    const dist = toEnemy.length();
-    if (dist > activeAttack.range) continue;
+    const hitPoint = getEnemyHitPoint(enemy);
+    const toEnemy = hitPoint.clone().sub(playerPos);
 
-    toEnemy.y = 0;
-    if (toEnemy.lengthSq() === 0) continue;
-    toEnemy.normalize();
+    const verticalDiff = Math.abs(toEnemy.y);
+    if (verticalDiff > 2.0) continue;
 
-    const facing = forward.dot(toEnemy);
-    if (facing < 0.1) continue;
+    const flatToEnemy = toEnemy.clone();
+    flatToEnemy.y = 0;
 
-    const score = facing * 3 - dist;
+    const dist = flatToEnemy.length();
+    const effectiveRange = activeAttack.range + ENEMY_RADIUS + 0.35;
+    if (dist > effectiveRange || dist < 0.0001) continue;
+
+    flatToEnemy.normalize();
+    const angle = Math.acos(clamp(forward.dot(flatToEnemy), -1, 1));
+
+    const closeBonus = dist < 1.25 ? 1 : 0;
+    const inCone = angle <= halfConeRad || closeBonus;
+
+    if (!inCone) continue;
+
+    const score = (1 - angle / Math.max(halfConeRad, 0.001)) * 3.0 - dist * 0.75 + closeBonus * 1.15;
+
     if (score > bestScore) {
       bestScore = score;
-      bestEnemy = enemy;
+      bestEnemy = { enemy, index: i };
     }
   }
 
   if (bestEnemy) {
-    damageEnemy(bestEnemy, activeAttack.damage, forward);
-    activeAttack.hasHit = true;
+    const enemy = bestEnemy.enemy;
+    const knockDir = enemy.group.position.clone().sub(playerPos);
+    knockDir.y = 0;
+    if (knockDir.lengthSq() < 0.0001) knockDir.copy(forward);
+    else knockDir.normalize();
+
+    damageEnemy(enemy, activeAttack.damage, knockDir);
+    activeAttack.hitIds.add(bestEnemy.index);
   }
 }
 
@@ -877,6 +1092,7 @@ function damagePlayer(amount) {
 
   player.life = Math.max(0, player.life - amount);
   player.invulTime = 0.5;
+  triggerCameraShake(0.08);
   updatePlayerHUD();
 
   if (player.life <= 0) {
@@ -884,6 +1100,9 @@ function damagePlayer(amount) {
     player.stamina = player.maxStamina;
     player.exhausted = false;
     player.staminaCooldown = 0;
+    comboCount = 0;
+    comboTimer = 0;
+    comboUI.style.opacity = "0";
     updatePlayerHUD();
 
     playerCollider.start.set(0, PLAYER_RADIUS + 0.05, 0);
@@ -927,14 +1146,13 @@ function toggleLockOn() {
 // ENEMY ASSETS
 // =====================================================
 async function loadEnemyAssets() {
-  setStatus("Cargando zombie base...");
-  const zombieBase = await loadFBX(ENEMY_MODEL_FILE);
+  setStatus("Cargando zombies...");
 
-  setStatus("Cargando animación zombie 1...");
-  const attackA = await loadFBX(ENEMY_ATTACK_FILE);
-
-  setStatus("Cargando animación zombie 2...");
-  const attackB = await loadFBX(ENEMY_ATTACK_FILE_2);
+  const [zombieBase, attackA, attackB] = await Promise.all([
+    loadFBX(ENEMY_MODEL_FILE),
+    loadFBX(ENEMY_ATTACK_FILE),
+    loadFBX(ENEMY_ATTACK_FILE_2)
+  ]);
 
   enemyAssets.model = zombieBase;
   enemyAssets.clips.idle = getFirstClip(zombieBase) || getFirstClip(attackB) || getFirstClip(attackA);
@@ -1029,6 +1247,7 @@ function createEnemy(x, z) {
     maxLife: 60,
     dead: false,
     hitCooldown: 0,
+    stunTimer: 0,
     attackCooldown: Math.random() * 0.8,
     attackTimer: 0,
     attackDidDamage: false,
@@ -1122,14 +1341,14 @@ function applyEnemySeparation(enemy, dt) {
   for (const other of enemies) {
     if (other === enemy || other.dead) continue;
 
-    const delta = enemy.group.position.clone().sub(other.group.position);
-    delta.y = 0;
+    tempVector.copy(enemy.group.position).sub(other.group.position);
+    tempVector.y = 0;
 
-    const dist = delta.length();
+    const dist = tempVector.length();
     if (dist > 0 && dist < ENEMY_SEPARATION_DISTANCE) {
-      delta.normalize();
+      tempVector.normalize();
       const strength = (ENEMY_SEPARATION_DISTANCE - dist) * ENEMY_SEPARATION_FORCE;
-      push.addScaledVector(delta, strength * dt);
+      push.addScaledVector(tempVector, strength * dt);
     }
   }
 
@@ -1145,7 +1364,8 @@ function updateEnemyAttack(enemy, dt, distToPlayer) {
     distToPlayer <= ENEMY_ATTACK_RANGE &&
     enemy.attackCooldown <= 0 &&
     enemy.currentActionKey !== "attack1" &&
-    enemy.currentActionKey !== "attack2"
+    enemy.currentActionKey !== "attack2" &&
+    enemy.stunTimer <= 0
   ) {
     const attackKey = Math.random() > 0.5 ? "attack1" : "attack2";
     playEnemyAction(enemy, attackKey);
@@ -1174,6 +1394,7 @@ function updateEnemies(dt) {
 
     enemy.mixer.update(dt);
     enemy.hitCooldown = Math.max(0, enemy.hitCooldown - dt);
+    enemy.stunTimer = Math.max(0, enemy.stunTimer - dt);
 
     if (!enemy.onFloor) {
       enemy.velocity.y -= GRAVITY * dt;
@@ -1192,13 +1413,17 @@ function updateEnemies(dt) {
 
     const isAttacking = enemy.currentActionKey === "attack1" || enemy.currentActionKey === "attack2";
 
-    if (!isAttacking && dist < ENEMY_DETECT_RANGE && dist > ENEMY_ATTACK_RANGE) {
-      enemy.velocity.addScaledVector(flat, ENEMY_SPEED * dt);
-      playEnemyAction(enemy, "walk");
-    } else if (!isAttacking && dist <= ENEMY_ATTACK_RANGE) {
-      playEnemyAction(enemy, "idle");
-    } else if (!isAttacking && dist >= ENEMY_DETECT_RANGE) {
-      playEnemyAction(enemy, "idle");
+    if (enemy.stunTimer <= 0) {
+      if (!isAttacking && dist < ENEMY_DETECT_RANGE && dist > ENEMY_ATTACK_RANGE) {
+        enemy.velocity.addScaledVector(flat, ENEMY_SPEED * dt);
+        playEnemyAction(enemy, "walk");
+      } else if (!isAttacking && dist <= ENEMY_ATTACK_RANGE) {
+        playEnemyAction(enemy, "idle");
+      } else if (!isAttacking && dist >= ENEMY_DETECT_RANGE) {
+        playEnemyAction(enemy, "idle");
+      }
+
+      updateEnemyAttack(enemy, dt, dist);
     }
 
     applyEnemySeparation(enemy, dt);
@@ -1214,7 +1439,7 @@ function updateEnemies(dt) {
     const center = getCapsuleCenter(enemy.capsule);
     enemy.group.position.set(
       center.x,
-      enemy.capsule.start.y - ENEMY_RADIUS,
+      enemy.capsule.start.y - ENEMY_RADIUS - 0.03,
       center.z
     );
 
@@ -1223,8 +1448,6 @@ function updateEnemies(dt) {
       enemy.capsule.end.set(0, ENEMY_HEIGHT + 0.05, 0);
       enemy.velocity.set(0, 0, 0);
     }
-
-    updateEnemyAttack(enemy, dt, dist);
   }
 
   updateEnemyBillboards();
@@ -1451,6 +1674,12 @@ function updateThirdPersonCamera() {
 
   controls.target.lerp(cameraTarget, TARGET_LERP);
   camera.position.lerp(safeDesired, CAMERA_LERP);
+
+  if (cameraShake > 0) {
+    camera.position.x += (Math.random() - 0.5) * cameraShake;
+    camera.position.y += (Math.random() - 0.5) * cameraShake * 0.7;
+    camera.position.z += (Math.random() - 0.5) * cameraShake;
+  }
 }
 
 function updateCameraKeyboard(dt) {
@@ -1507,26 +1736,17 @@ function handleEnvironmentKeys(e) {
 }
 
 // =====================================================
-// INIT
+// CARGA PLAYER CON PROMISE.ALL
 // =====================================================
-async function init() {
-  buildButtons();
-  updatePlayerHUD();
-  updateLockHUD();
+async function loadPlayerAndAnimations() {
+  setStatus("Cargando personaje y animaciones...");
+  const promises = [loadFBX(BASE_CHARACTER), ...ANIMS.map((a) => loadFBX(a.file))];
+  const results = await Promise.all(promises);
 
-  setStatus("Cargando escenario...");
-  await loadScenario();
+  const base = results[0];
+  const animFiles = results.slice(1);
 
-  setStatus("Cargando personaje...");
-  try {
-    character = await loadFBX(BASE_CHARACTER);
-  } catch ({ url, err }) {
-    showError(
-      `No se pudo cargar el personaje: ${url}\n\n` +
-      `Error: ${err?.message || err}`
-    );
-    throw err;
-  }
+  character = base;
 
   character.traverse((obj) => {
     if (obj.isMesh) {
@@ -1544,35 +1764,55 @@ async function init() {
 
   for (let i = 0; i < ANIMS.length; i++) {
     const meta = ANIMS[i];
-    setStatus(`Cargando animaciones jugador... <b>${i + 1}/${ANIMS.length}</b><br>${meta.name}`);
-
-    let fbxAnim;
-    try {
-      fbxAnim = await loadFBX(meta.file);
-    } catch ({ url, err }) {
-      showError(
-        `No se pudo cargar la animación: ${url}\n\n` +
-        `Error: ${err?.message || err}`
-      );
-      throw err;
-    }
-
+    const fbxAnim = animFiles[i];
     const clip = getFirstClip(fbxAnim);
+
     if (!clip) {
       showError(`El archivo no trae clip de animación: ${meta.file}`);
-      throw new Error("FBX sin clip");
+      throw new Error(`FBX sin clip: ${meta.file}`);
     }
 
     clip.name = meta.name;
     const action = mixer.clipAction(clip);
     actions.set(meta.key, { action, meta });
   }
+}
+
+// =====================================================
+// INIT
+// =====================================================
+async function init() {
+  buildButtons();
+  updatePlayerHUD();
+  updateLockHUD();
+
+  setStatus("Cargando escenario...");
+  await loadScenario();
+
+  try {
+    await loadPlayerAndAnimations();
+  } catch (error) {
+    const url = error?.url;
+    const err = error?.err || error;
+
+    if (url || err) {
+      showError(
+        `No se pudo cargar el personaje/animaciones.\nArchivo: ${url || "desconocido"}\n\n` +
+        `Error: ${err?.message || err}`
+      );
+    }
+
+    throw err || new Error("Error cargando personaje o animaciones");
+  }
 
   try {
     await loadEnemyAssets();
-  } catch ({ url, err }) {
+  } catch (error) {
+    const url = error?.url;
+    const err = error?.err || error;
+
     showError(
-      `No se pudieron cargar los archivos del zombie.\nArchivo: ${url}\n\n` +
+      `No se pudieron cargar los archivos del zombie.\nArchivo: ${url || "desconocido"}\n\n` +
       `Error: ${err?.message || err}`
     );
     throw err;
@@ -1621,6 +1861,9 @@ function animate() {
 
   updatePlayer(deltaTime);
   updateEnemies(deltaTime);
+  updateParticles(deltaTime);
+  updateCombo(deltaTime);
+  updateEffects(deltaTime);
   updateThirdPersonCamera();
   updateCameraKeyboard(deltaTime);
 
