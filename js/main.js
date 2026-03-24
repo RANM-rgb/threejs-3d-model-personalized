@@ -312,7 +312,7 @@ const $bossLifeText = document.getElementById("bossLifeText");
 // =====================================================
 // CONFIG
 // =====================================================
-const BASE_CHARACTER = "assets/models/Paladinn.fbx";
+const BASE_CHARACTER = "assets/models/Paladin.fbx";
 const SCENARIO_FILE = "assets/scenarios/castle/scene.gltf";
 const COLLISION_FILE = "assets/models/collision-world.glb";
 
