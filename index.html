@@ -1,282 +1,74 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Aplicación WebGL con Three.js - Personaje 3D</title>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+  <title>Shadow Arena | Juego 3D</title>
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="./assets/img/alhambra-granada.png">
-</head>
+  <link rel="icon" type="image/png" href="./assets/img/favicon.png" />
 
-  <style>
-    :root {
-      --bg: #0b0f1a;
-      --panel: rgba(8, 12, 22, 0.72);
-      --panel-strong: rgba(12, 18, 32, 0.88);
-      --border: rgba(255, 255, 255, 0.12);
-      --text: #ffffff;
-      --muted: rgba(255, 255, 255, 0.78);
-      --soft: rgba(255, 255, 255, 0.08);
-      --soft-hover: rgba(255, 255, 255, 0.14);
-      --accent: #7aa2ff;
-      --danger-bg: rgba(90, 0, 0, 0.38);
-      --danger-border: rgba(255, 120, 120, 0.28);
-      --danger-text: #ffd7d7;
-    }
+  <!-- CSS -->
+  <link rel="stylesheet" href="./styles.css" />
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html, body {
-      margin: 0;
-      height: 100%;
-      overflow: hidden;
-      background: var(--bg);
-      font-family: system-ui, Arial, sans-serif;
-    }
-
-    canvas {
-      display: block;
-    }
-
-    #ui {
-      position: fixed;
-      left: 14px;
-      top: 14px;
-      z-index: 20;
-      width: 340px;
-      max-width: calc(100vw - 28px);
-      color: var(--text);
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-    }
-
-    #title {
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 6px;
-      letter-spacing: 0.2px;
-    }
-
-    #subtitle {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-
-    #status {
-      font-size: 13px;
-      line-height: 1.45;
-      color: var(--muted);
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 10px;
-      margin-bottom: 12px;
-    }
-
-    #status b {
-      color: #fff;
-    }
-
-    .section {
-      margin-top: 12px;
-    }
-
-    .section-title {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #d7e2ff;
-      margin-bottom: 8px;
-      opacity: 0.95;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
-
-    button {
-      cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: var(--soft);
-      color: #fff;
-      border-radius: 12px;
-      padding: 9px 10px;
-      font: 13px system-ui, Arial, sans-serif;
-      text-align: left;
-      transition: transform .08s ease, background .2s ease, border-color .2s ease;
-    }
-
-    button:hover {
-      background: var(--soft-hover);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    button:active {
-      transform: scale(.98);
-    }
-
-    button small {
-      display: block;
-      opacity: .72;
-      margin-top: 3px;
-      font-size: 11px;
-    }
-
-    .controls-list {
-      display: grid;
-      gap: 7px;
-    }
-
-    .control-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .key {
-      display: inline-block;
-      min-width: 64px;
-      text-align: center;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: var(--panel-strong);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      white-space: nowrap;
-    }
-
-    #legend {
-      margin-top: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 5px 9px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: rgba(255, 255, 255, 0.07);
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    #errors {
-      position: fixed;
-      right: 14px;
-      top: 14px;
-      z-index: 30;
-      width: min(540px, calc(100vw - 28px));
-      color: var(--danger-text);
-      font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      background: var(--danger-bg);
-      border: 1px solid var(--danger-border);
-      border-radius: 14px;
-      padding: 12px 14px;
-      display: none;
-      white-space: pre-wrap;
-      backdrop-filter: blur(8px);
-    }
-
-    @media (max-width: 900px) {
-      #ui {
-        width: 300px;
-      }
-    }
-
-    @media (max-width: 700px) {
-      #ui {
-        left: 10px;
-        top: 10px;
-        width: calc(100vw - 20px);
-        max-height: calc(100vh - 20px);
-        overflow: auto;
-      }
-
-      #errors {
-        top: auto;
-        bottom: 10px;
-        right: 10px;
-        width: calc(100vw - 20px);
-      }
-    }
-  </style>
-</head>
-<body>
-  <div id="ui">
-    <div id="title">Aplicación WebGL con Three.js</div>
-    <div id="subtitle">Control de personaje 3D con animaciones, cámara, iluminación, niebla y colisiones</div>
-
-    <div id="status">Cargando escena...</div>
-
-    <div class="section">
-      <div class="section-title">Animaciones</div>
-      <div class="grid" id="buttons"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Controles del personaje</div>
-      <div class="controls-list">
-        <div class="control-item"><span class="key">W A S D</span><span>Mover personaje</span></div>
-        <div class="control-item"><span class="key">Shift</span><span>Correr</span></div>
-        <div class="control-item"><span class="key">Espacio</span><span>Saltar</span></div>
-        <div class="control-item"><span class="key">F</span><span>Atacar</span></div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Cámara y entorno</div>
-      <div class="controls-list">
-        <div class="control-item"><span class="key">Mouse</span><span>Orbitar y zoom</span></div>
-        <div class="control-item"><span class="key">Q / E</span><span>Alejar o acercar cámara</span></div>
-        <div class="control-item"><span class="key">N / M</span><span>Modificar niebla</span></div>
-        <div class="control-item"><span class="key">Z / X</span><span>Bajar o subir luz</span></div>
-        <div class="control-item"><span class="key">1–9</span><span>Probar animaciones</span></div>
-      </div>
-    </div>
-
-    <div id="legend">
-      <span class="pill">Plano 3D</span>
-      <span class="pill">Animaciones FBX</span>
-      <span class="pill">Colisiones</span>
-      <span class="pill">Objetos dinámicos</span>
-      <span class="pill">Three.js</span>
-    </div>
-  </div>
-
-  <div id="errors"></div>
-
+  <!-- Importmap Three.js -->
   <script type="importmap">
     {
       "imports": {
-        "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+        "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"
       }
     }
   </script>
+</head>
+<body>
+  <!-- Overlay de carga / estado -->
+  <div id="topbar">
+    <div class="brand-block">
+      <div class="brand-title">SHADOW ARENA</div>
+      <div class="brand-subtitle">Combate 3D con Three.js</div>
+    </div>
 
+    <div id="status-panel">
+      <div class="panel-title">Estado</div>
+      <div id="status">
+        Cargando juego...
+      </div>
+    </div>
+  </div>
+
+  <!-- Controles rápidos -->
+  <div id="controls-panel">
+    <div class="panel-title">Controles</div>
+    <div class="controls-grid">
+      <span><b>WASD</b> Mover</span>
+      <span><b>Shift</b> Correr</span>
+      <span><b>Espacio</b> Saltar</span>
+      <span><b>1-6</b> Ataques</span>
+      <span><b>F</b> Ataque rápido</span>
+      <span><b>7</b> Bloquear</span>
+      <span><b>V</b> Esquivar</span>
+      <span><b>R</b> Lock-on</span>
+      <span><b>Tab</b> Cambiar target</span>
+      <span><b>P</b> Pausa</span>
+      <span><b>T</b> Reiniciar</span>
+      <span><b>Q / E</b> Zoom</span>
+    </div>
+  </div>
+
+  <!-- Panel botones -->
+  <div id="action-panel">
+    <div class="panel-title">Acciones</div>
+    <div id="buttons" class="buttons-grid"></div>
+  </div>
+
+  <!-- Panel de errores -->
+  <div id="errors" class="error-box" style="display:none;"></div>
+
+  <!-- Script principal -->
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>

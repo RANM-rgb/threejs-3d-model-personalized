@@ -26,13 +26,13 @@ function showError(msg) {
 }
 
 // =====================================================
-// HUD
+// MAIN HUD
 // =====================================================
 const hud = document.createElement("div");
 hud.style.position = "fixed";
 hud.style.top = "12px";
 hud.style.right = "12px";
-hud.style.width = "310px";
+hud.style.width = "320px";
 hud.style.padding = "12px 14px";
 hud.style.borderRadius = "14px";
 hud.style.background = "rgba(10,16,30,0.86)";
@@ -56,14 +56,24 @@ hud.innerHTML = `
   </div>
   <div id="playerStaminaText">100 / 100</div>
 
-  <div style="margin-top:10px;">Puntaje</div>
-  <div id="scoreText" style="font-weight:700;">0</div>
-
-  <div style="margin-top:10px;">Kills</div>
-  <div id="killsText" style="font-weight:700;">0</div>
-
-  <div style="margin-top:10px;">Wave</div>
-  <div id="waveText" style="font-weight:700;">1</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+    <div>
+      <div>Puntaje</div>
+      <div id="scoreText" style="font-weight:900;font-size:18px;">0</div>
+    </div>
+    <div>
+      <div>High Score</div>
+      <div id="highScoreText" style="font-weight:900;font-size:18px;">0</div>
+    </div>
+    <div>
+      <div>Kills</div>
+      <div id="killsText" style="font-weight:900;font-size:18px;">0</div>
+    </div>
+    <div>
+      <div>Wave</div>
+      <div id="waveText" style="font-weight:900;font-size:18px;">1</div>
+    </div>
+  </div>
 
   <div id="enemyCounter" style="margin-top:10px;">Enemigos vivos: 0</div>
   <div id="lockOnText" style="margin-top:8px;opacity:.9;">Lock-on: no</div>
@@ -75,7 +85,7 @@ targetHUD.style.position = "fixed";
 targetHUD.style.left = "50%";
 targetHUD.style.top = "18px";
 targetHUD.style.transform = "translateX(-50%)";
-targetHUD.style.width = "340px";
+targetHUD.style.width = "360px";
 targetHUD.style.padding = "10px 14px";
 targetHUD.style.borderRadius = "14px";
 targetHUD.style.background = "rgba(12,18,34,.86)";
@@ -96,6 +106,32 @@ targetHUD.innerHTML = `
   <div id="targetLifeText" style="margin-top:6px;">60 / 60</div>
 `;
 document.body.appendChild(targetHUD);
+
+const bossHUD = document.createElement("div");
+bossHUD.style.position = "fixed";
+bossHUD.style.left = "50%";
+bossHUD.style.bottom = "26px";
+bossHUD.style.transform = "translateX(-50%)";
+bossHUD.style.width = "520px";
+bossHUD.style.padding = "14px 18px";
+bossHUD.style.borderRadius = "16px";
+bossHUD.style.background = "rgba(35,8,8,.92)";
+bossHUD.style.color = "#fff";
+bossHUD.style.fontFamily = "Arial, sans-serif";
+bossHUD.style.fontSize = "14px";
+bossHUD.style.zIndex = "1004";
+bossHUD.style.boxShadow = "0 10px 26px rgba(0,0,0,.4)";
+bossHUD.style.opacity = "0";
+bossHUD.style.pointerEvents = "none";
+bossHUD.style.transition = "opacity .22s ease";
+bossHUD.innerHTML = `
+  <div id="bossName" style="font-weight:900;font-size:18px;margin-bottom:8px;">BOSS</div>
+  <div style="height:18px;background:#2b1212;border-radius:999px;overflow:hidden;">
+    <div id="bossLifeBar" style="height:100%;width:100%;background:linear-gradient(90deg,#ff3b30,#ff9500);"></div>
+  </div>
+  <div id="bossLifeText" style="margin-top:8px;">300 / 300</div>
+`;
+document.body.appendChild(bossHUD);
 
 const comboUI = document.createElement("div");
 comboUI.style.position = "fixed";
@@ -133,7 +169,7 @@ victoryBanner.style.position = "fixed";
 victoryBanner.style.left = "50%";
 victoryBanner.style.top = "50%";
 victoryBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
-victoryBanner.style.padding = "20px 32px";
+victoryBanner.style.padding = "22px 34px";
 victoryBanner.style.borderRadius = "18px";
 victoryBanner.style.background = "rgba(14,20,38,.92)";
 victoryBanner.style.color = "#fff";
@@ -148,6 +184,27 @@ victoryBanner.style.transition = "opacity 0.25s ease, transform 0.25s ease";
 victoryBanner.style.zIndex = "1002";
 victoryBanner.textContent = "VICTORIA";
 document.body.appendChild(victoryBanner);
+
+const totalVictoryBanner = document.createElement("div");
+totalVictoryBanner.style.position = "fixed";
+totalVictoryBanner.style.left = "50%";
+totalVictoryBanner.style.top = "50%";
+totalVictoryBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
+totalVictoryBanner.style.padding = "26px 42px";
+totalVictoryBanner.style.borderRadius = "20px";
+totalVictoryBanner.style.background = "rgba(35,24,4,.95)";
+totalVictoryBanner.style.color = "#fff";
+totalVictoryBanner.style.fontFamily = "Arial, sans-serif";
+totalVictoryBanner.style.fontWeight = "900";
+totalVictoryBanner.style.fontSize = "38px";
+totalVictoryBanner.style.letterSpacing = "1px";
+totalVictoryBanner.style.boxShadow = "0 20px 60px rgba(0,0,0,.45)";
+totalVictoryBanner.style.opacity = "0";
+totalVictoryBanner.style.pointerEvents = "none";
+totalVictoryBanner.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+totalVictoryBanner.style.zIndex = "1006";
+totalVictoryBanner.textContent = "BOSS DERROTADO";
+document.body.appendChild(totalVictoryBanner);
 
 const defeatBanner = document.createElement("div");
 defeatBanner.style.position = "fixed";
@@ -189,6 +246,52 @@ centerMessage.style.zIndex = "1003";
 centerMessage.style.transition = "opacity .18s ease, transform .18s ease";
 document.body.appendChild(centerMessage);
 
+// =====================================================
+// START / PAUSE MENUS
+// =====================================================
+const startScreen = document.createElement("div");
+startScreen.style.position = "fixed";
+startScreen.style.inset = "0";
+startScreen.style.background = "linear-gradient(180deg, rgba(4,9,20,.92), rgba(8,12,28,.96))";
+startScreen.style.display = "flex";
+startScreen.style.flexDirection = "column";
+startScreen.style.justifyContent = "center";
+startScreen.style.alignItems = "center";
+startScreen.style.gap = "16px";
+startScreen.style.zIndex = "2000";
+startScreen.innerHTML = `
+  <div style="font-family:Arial,sans-serif;font-size:48px;font-weight:900;color:#fff;letter-spacing:2px;">SHADOW ARENA</div>
+  <div style="font-family:Arial,sans-serif;font-size:18px;color:#cfe3ff;text-align:center;max-width:760px;line-height:1.5;">
+    Sobrevive a las oleadas, recorre el castillo y derrota al boss final.
+    <br>WASD moverse · Shift correr · Espacio saltar · 1-6 ataques · F rápido · 7 bloquear · V esquivar · R lock-on · Tab cambiar objetivo · P pausa
+  </div>
+  <button id="startGameBtn" style="padding:14px 28px;border:none;border-radius:999px;background:#ffd400;color:#000;font-weight:900;font-size:18px;cursor:pointer;">
+    INICIAR JUEGO
+  </button>
+`;
+document.body.appendChild(startScreen);
+
+const pauseOverlay = document.createElement("div");
+pauseOverlay.style.position = "fixed";
+pauseOverlay.style.inset = "0";
+pauseOverlay.style.background = "rgba(0,0,0,.58)";
+pauseOverlay.style.display = "none";
+pauseOverlay.style.justifyContent = "center";
+pauseOverlay.style.alignItems = "center";
+pauseOverlay.style.flexDirection = "column";
+pauseOverlay.style.gap = "12px";
+pauseOverlay.style.zIndex = "1999";
+pauseOverlay.innerHTML = `
+  <div style="font-family:Arial,sans-serif;font-size:42px;font-weight:900;color:#fff;">PAUSA</div>
+  <div style="font-family:Arial,sans-serif;font-size:18px;color:#fff;">Presiona P para continuar</div>
+`;
+document.body.appendChild(pauseOverlay);
+
+const $startGameBtn = document.getElementById("startGameBtn");
+
+// =====================================================
+// HUD refs
+// =====================================================
 const $playerLifeBar = document.getElementById("playerLifeBar");
 const $playerLifeText = document.getElementById("playerLifeText");
 const $playerStaminaBar = document.getElementById("playerStaminaBar");
@@ -196,11 +299,15 @@ const $playerStaminaText = document.getElementById("playerStaminaText");
 const $enemyCounter = document.getElementById("enemyCounter");
 const $lockOnText = document.getElementById("lockOnText");
 const $scoreText = document.getElementById("scoreText");
+const $highScoreText = document.getElementById("highScoreText");
 const $killsText = document.getElementById("killsText");
 const $waveText = document.getElementById("waveText");
 const $targetName = document.getElementById("targetName");
 const $targetLifeBar = document.getElementById("targetLifeBar");
 const $targetLifeText = document.getElementById("targetLifeText");
+const $bossName = document.getElementById("bossName");
+const $bossLifeBar = document.getElementById("bossLifeBar");
+const $bossLifeText = document.getElementById("bossLifeText");
 
 // =====================================================
 // CONFIG
@@ -213,6 +320,12 @@ const ENEMY_MODEL_FILE = "assets/models/enemies/Ch10_nonPBR.fbx";
 const ENEMY_ATTACK_FILE = "assets/models/enemies/Zombie Attack.fbx";
 const ENEMY_ATTACK_FILE_2 = "assets/models/enemies/Zombie Punching.fbx";
 
+// BOSS REAL
+const BOSS_MODEL_FILE = "assets/models/boss/Parasite L Starkie.fbx";
+const BOSS_ATTACK_FILE_1 = "assets/models/boss/Mutant Swiping.fbx";
+const BOSS_ATTACK_FILE_2 = "assets/models/boss/Jump Attack.fbx";
+const BOSS_ATTACK_FILE_3 = "assets/models/boss/Mutant Punch.fbx";
+
 const AUDIO_FILES = {
   hit: "assets/audio/hit.wav",
   block: "assets/audio/block.wav",
@@ -221,7 +334,8 @@ const AUDIO_FILES = {
   step2: "assets/audio/step2.wav",
   dodge: "assets/audio/dodge.wav",
   victory: "assets/audio/victory.wav",
-  switch: "assets/audio/switch.wav"
+  switch: "assets/audio/switch.wav",
+  boss: "assets/audio/boss.wav"
 };
 
 const ANIMS = [
@@ -231,16 +345,15 @@ const ANIMS = [
   { key: "jump", name: "Jump", file: "assets/models/Jumping Up.fbx", type: "jump" },
 
   { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.7, hitStart: 0.13, hitEnd: 0.64, staminaCost: 10, coneDeg: 100, knockback: 4.2, trailSize: 1.05, score: 25 },
-  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack.fbx", type: "attack", damage: 18, range: 2.48, hitStart: 0.11, hitEnd: 0.58, staminaCost: 9, coneDeg: 96, knockback: 3.85, trailSize: 0.95, score: 22 },
-  { key: "3", name: "Attack 3", file: "assets/models/Stepping Backward.fbx", type: "attack", damage: 12, range: 2.24, hitStart: 0.04, hitEnd: 0.36, staminaCost: 8, coneDeg: 120, knockback: 3.25, trailSize: 0.9, score: 18 },
-  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Turn.fbx", type: "attack", damage: 16, range: 2.38, hitStart: 0.07, hitEnd: 0.50, staminaCost: 9, coneDeg: 110, knockback: 3.65, trailSize: 0.95, score: 20 },
+  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack Bitch.fbx", type: "attack", damage: 18, range: 2.48, hitStart: 0.11, hitEnd: 0.58, staminaCost: 9, coneDeg: 96, knockback: 3.85, trailSize: 0.95, score: 22 },
+  { key: "3", name: "Attack 3", file: "assets/models/Great Sword Jump Attack.fbx", type: "attack", damage: 12, range: 2.24, hitStart: 0.04, hitEnd: 0.36, staminaCost: 8, coneDeg: 120, knockback: 3.25, trailSize: 0.9, score: 18 },
+  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Slash.fbx", type: "attack", damage: 16, range: 2.38, hitStart: 0.07, hitEnd: 0.50, staminaCost: 9, coneDeg: 110, knockback: 3.65, trailSize: 0.95, score: 20 },
   { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 2.34, hitStart: 0.10, hitEnd: 0.52, staminaCost: 9, coneDeg: 108, knockback: 3.45, trailSize: 0.95, score: 20 },
-  { key: "6", name: "Attack 6", file: "assets/models/Great Sword Attack.fbx", type: "attack", damage: 24, range: 2.82, hitStart: 0.16, hitEnd: 0.68, staminaCost: 12, coneDeg: 92, knockback: 5.0, trailSize: 1.12, score: 30 },
+  { key: "6", name: "Attack 6", file: "assets/models/Sword and Shield Kick.fbx", type: "attack", damage: 24, range: 2.82, hitStart: 0.16, hitEnd: 0.68, staminaCost: 12, coneDeg: 92, knockback: 5.0, trailSize: 1.12, score: 30 },
 
   { key: "7", name: "Block", file: "assets/models/Sword And Shield Crouch Block Idle.fbx", type: "blockHold" },
-  { key: "f", name: "Quick Attack", file: "assets/models/Draw A Great Sword 2.fbx", type: "quickAttack", damage: 14, range: 2.18, hitStart: 0.04, hitEnd: 0.34, staminaCost: 7, coneDeg: 130, knockback: 3.0, trailSize: 0.82, score: 15 },
-
-  { key: "v", name: "Dodge", file: "assets/models/Stepping Backward.fbx", type: "dodge", staminaCost: 14, duration: 0.42, iframeStart: 0.06, iframeEnd: 0.26, speed: 9.5 }
+  { key: "f", name: "Quick Attack", file: "assets/models/Great Sword Crouching.fbx", type: "quickAttack", damage: 14, range: 2.18, hitStart: 0.04, hitEnd: 0.34, staminaCost: 7, coneDeg: 130, knockback: 3.0, trailSize: 0.82, score: 15 },
+  { key: "v", name: "Dodge", file: "assets/models/Standing Dodge Backward.fbx", type: "dodge", staminaCost: 14, duration: 0.42, iframeStart: 0.06, iframeEnd: 0.26, speed: 9.5 }
 ];
 
 const IDLE_KEY = "idle";
@@ -253,7 +366,7 @@ const DODGE_KEY = "v";
 const ATTACK_KEYS = ["1", "2", "3", "4", "5", "6"];
 
 const PLAYER_HEIGHT = 1.8;
-const PLAYER_RADIUS = 0.35;
+const PLAYER_RADIUS = 0.30;
 const PLAYER_MODEL_VISUAL_HEIGHT = 1.8;
 
 const GRAVITY = 30;
@@ -276,7 +389,7 @@ const CAMERA_LOCK_DISTANCE = 4.15;
 const CAMERA_COMBAT_DISTANCE = 4.35;
 
 const FALL_LIMIT_Y = -20;
-const STEP_HEIGHT = 0.28;
+const STEP_HEIGHT = 0.72;
 const PLAYER_GROUND_EPS = 0.08;
 
 const ENEMY_BASE_COUNT = 4;
@@ -292,11 +405,45 @@ const ENEMY_RADIUS = 0.32;
 const ENEMY_SCALE = 0.011;
 const ENEMY_FALL_LIMIT_Y = -20;
 
-const LOCK_ON_RANGE = 18;
+const BOSS_START_WAVE = 4;
+const BOSS_SPEED = 2.9;
+const BOSS_ATTACK_RANGE = 2.7;
+const BOSS_MAX_LIFE = 620;
+const BOSS_DAMAGE = 28;
+const BOSS_SCALE = 0.018;
+
+const LOCK_ON_RANGE = 22;
 const PARTICLE_MAX_LIFE = 0.5;
 const COMBO_RESET_TIME = 1.5;
 const CAMERA_SHAKE_DAMP = 6.0;
 const TIME_SCALE_RETURN_SPEED = 10.0;
+
+const STORAGE_KEY_HIGHSCORE = "shadow_arena_highscore";
+
+const CASTLE_VALID_SPAWNS = [
+  { x: -5.5, z: -3.5 },
+  { x: -3.2, z: -1.8 },
+  { x: -1.2, z: -3.8 },
+  { x: 1.4, z: -2.8 },
+  { x: 3.8, z: -1.2 },
+  { x: 5.2, z: 1.5 },
+
+  { x: -5.0, z: 2.2 },
+  { x: -2.8, z: 1.4 },
+  { x: -0.6, z: 2.6 },
+  { x: 2.0, z: 1.8 },
+  { x: 4.8, z: 3.2 },
+
+  { x: -4.2, z: 6.0 },
+  { x: -1.8, z: 5.2 },
+  { x: 0.8, z: 6.5 },
+  { x: 3.0, z: 5.6 },
+  { x: 5.4, z: 6.8 },
+
+  { x: -2.5, z: 9.2 },
+  { x: 0.0, z: 9.8 },
+  { x: 2.6, z: 9.1 }
+];
 
 // =====================================================
 // THREE SETUP
@@ -328,14 +475,11 @@ controls.maxDistance = 8;
 controls.maxPolarAngle = Math.PI / 2.05;
 
 // =====================================================
-// WORLD GROUP
+// WORLD GROUP / LIGHTS / FLOOR
 // =====================================================
 const worldGroup = new THREE.Group();
 scene.add(worldGroup);
 
-// =====================================================
-// LIGHTS
-// =====================================================
 const hemiLight = new THREE.HemisphereLight(0xdde7ff, 0x1c2438, 1.1);
 scene.add(hemiLight);
 
@@ -355,9 +499,6 @@ const fillLight = new THREE.PointLight(0x6b8cff, 0.45, 60);
 fillLight.position.set(-8, 6, -6);
 scene.add(fillLight);
 
-// =====================================================
-// BACKUP FLOOR
-// =====================================================
 const backupFloor = new THREE.Mesh(
   new THREE.PlaneGeometry(300, 300),
   new THREE.MeshStandardMaterial({
@@ -375,14 +516,11 @@ grid.position.y = 0.02;
 scene.add(grid);
 
 // =====================================================
-// LOADERS
+// LOADERS / AUDIO
 // =====================================================
 const fbxLoader = new FBXLoader();
 const gltfLoader = new GLTFLoader();
 
-// =====================================================
-// AUDIO
-// =====================================================
 const listener = new THREE.AudioListener();
 camera.add(listener);
 
@@ -429,7 +567,7 @@ function playUISound(name, volume = 0.4, playbackRate = 1) {
 
   setTimeout(() => {
     try { sound.stop(); } catch {}
-  }, Math.ceil((buffer.duration || 1) * 1000) + 100);
+  }, Math.ceil((buffer.duration || 1) * 1000) + 120);
 }
 
 // =====================================================
@@ -474,6 +612,8 @@ let activeAttack = null;
 const enemies = [];
 let lockedEnemy = null;
 let combatWon = false;
+let gameStarted = false;
+let gamePaused = false;
 
 const particles = [];
 const slashTrails = [];
@@ -506,19 +646,31 @@ let footToggle = false;
 const enemyAssets = {
   loaded: false,
   model: null,
+  bossModel: null,
   clips: {
     idle: null,
     walk: null,
     attack1: null,
     attack2: null
+  },
+  bossClips: {
+    idle: null,
+    walk: null,
+    attack1: null,
+    attack2: null,
+    attack3: null
   }
 };
 
 const game = {
   score: 0,
+  highScore: 0,
   kills: 0,
   wave: 1,
-  inDefeat: false
+  inDefeat: false,
+  totalVictory: false,
+  bossSpawned: false,
+  bossDefeated: false
 };
 
 // =====================================================
@@ -580,8 +732,8 @@ function normalizeCharacter(obj) {
   obj.position.y -= box2.min.y;
 }
 
-function prepareEnemyVisual(obj) {
-  obj.scale.setScalar(ENEMY_SCALE);
+function prepareEnemyVisual(obj, scaleValue = ENEMY_SCALE) {
+  obj.scale.setScalar(scaleValue);
 
   obj.traverse((child) => {
     if (child.isMesh) {
@@ -605,7 +757,7 @@ function updateStatusLabel(label) {
     Actual: <b>${label}</b><br>
     WASD mover · Shift sprint · Espacio saltar · V esquive<br>
     1-6 ataques · 7 cubrirse · F ataque rápido<br>
-    R lock-on · Tab cambiar objetivo · T reiniciar
+    R lock-on · Tab cambiar objetivo · P pausa · T reiniciar
   `);
 }
 
@@ -640,6 +792,19 @@ function findAnimMeta(key) {
   return ANIMS.find((a) => a.key === key) || null;
 }
 
+function readHighScore() {
+  const raw = localStorage.getItem(STORAGE_KEY_HIGHSCORE);
+  const value = Number(raw || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function writeHighScore() {
+  if (game.score > game.highScore) {
+    game.highScore = game.score;
+    localStorage.setItem(STORAGE_KEY_HIGHSCORE, String(game.highScore));
+  }
+}
+
 function spendStamina(amount) {
   if (player.stamina < amount) return false;
   player.stamina = Math.max(0, player.stamina - amount);
@@ -660,14 +825,16 @@ function hasMovementInput() {
 
 function getEnemyHitPoint(enemy) {
   const p = enemy.group.position.clone();
-  p.y += 0.95;
+  p.y += enemy.isBoss ? 1.6 : 0.95;
   return p;
 }
 
 function updateGameHUD() {
+  writeHighScore();
   $scoreText.textContent = String(game.score);
+  $highScoreText.textContent = String(game.highScore);
   $killsText.textContent = String(game.kills);
-  $waveText.textContent = String(game.wave);
+  $waveText.textContent = game.bossSpawned && !game.bossDefeated ? "BOSS" : String(game.wave);
 }
 
 function updatePlayerHUD() {
@@ -681,7 +848,7 @@ function updatePlayerHUD() {
 }
 
 function updateTargetHUD() {
-  if (!lockedEnemy || lockedEnemy.dead) {
+  if (!lockedEnemy || lockedEnemy.dead || lockedEnemy.isBoss) {
     targetHUD.style.opacity = "0";
     return;
   }
@@ -693,13 +860,40 @@ function updateTargetHUD() {
   $targetLifeText.textContent = `${Math.ceil(Math.max(0, lockedEnemy.life))} / ${lockedEnemy.maxLife}`;
 }
 
+function updateBossHUD() {
+  const boss = enemies.find((e) => e.isBoss && !e.dead);
+  if (!boss) {
+    bossHUD.style.opacity = "0";
+    return;
+  }
+
+  bossHUD.style.opacity = "1";
+  $bossName.textContent = boss.label || "BOSS";
+  const pct = clamp((boss.life / boss.maxLife) * 100, 0, 100);
+  $bossLifeBar.style.width = `${pct}%`;
+  $bossLifeText.textContent = `${Math.ceil(Math.max(0, boss.life))} / ${boss.maxLife}`;
+}
+
 function updateEnemyHUD() {
   const alive = enemies.filter((e) => !e.dead).length;
   $enemyCounter.textContent = `Enemigos vivos: ${alive}`;
   updateTargetHUD();
+  updateBossHUD();
 
-  if (!combatWon && alive === 0 && enemies.length > 0) {
+  if (!combatWon && alive === 0 && enemies.length > 0 && !game.inDefeat && !game.totalVictory) {
     combatWon = true;
+
+    if (game.bossSpawned && !game.bossDefeated) {
+      game.bossDefeated = true;
+      game.totalVictory = true;
+      totalVictoryBanner.style.opacity = "1";
+      totalVictoryBanner.style.transform = "translate(-50%, -50%) scale(1)";
+      showCenterMessage("JUEGO COMPLETADO", 1.5);
+      playUISound("victory", 0.5);
+      writeHighScore();
+      return;
+    }
+
     victoryBanner.style.opacity = "1";
     victoryBanner.style.transform = "translate(-50%, -50%) scale(1)";
     triggerCameraShake(0.2);
@@ -708,11 +902,21 @@ function updateEnemyHUD() {
     playUISound("victory", 0.45);
 
     setTimeout(() => {
+      if (game.inDefeat || game.totalVictory) return;
+
       victoryBanner.style.opacity = "0";
       victoryBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
-      game.wave += 1;
-      updateGameHUD();
-      startNextWave();
+
+      if (game.wave >= BOSS_START_WAVE - 1 && !game.bossSpawned) {
+        game.wave += 1;
+        game.bossSpawned = true;
+        updateGameHUD();
+        startBossWave();
+      } else {
+        game.wave += 1;
+        updateGameHUD();
+        startNextWave();
+      }
     }, 1800);
   }
 }
@@ -720,6 +924,7 @@ function updateEnemyHUD() {
 function updateLockHUD() {
   $lockOnText.textContent = `Lock-on: ${lockedEnemy && !lockedEnemy.dead ? "sí" : "no"}`;
   updateTargetHUD();
+  updateBossHUD();
 }
 
 function triggerHitFlash() {
@@ -845,6 +1050,64 @@ function getTrailAnchorWorldPosition(out = new THREE.Vector3()) {
   out.y += 1.15;
   out.add(new THREE.Vector3(0.35, 0, 0));
   return out;
+}
+
+function shuffleArray(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function isSpawnPositionWalkable(x, z, radius = ENEMY_RADIUS) {
+  const probe = new Capsule(
+    new THREE.Vector3(x, radius + 0.08, z),
+    new THREE.Vector3(x, ENEMY_HEIGHT + 0.08, z),
+    radius
+  );
+
+  const hit = worldOctree.capsuleIntersect(probe);
+
+  if (hit && hit.normal.y < 0.35) return false;
+
+  const center = getCapsuleCenter(probe);
+  if (center.y < -1) return false;
+
+  return true;
+}
+
+function getSafeWaveSpawnPoints(count) {
+  const shuffled = shuffleArray(CASTLE_VALID_SPAWNS);
+  const chosen = [];
+
+  for (const p of shuffled) {
+    if (!isSpawnPositionWalkable(p.x, p.z)) continue;
+
+    let tooClose = false;
+    for (const c of chosen) {
+      const dx = p.x - c.x;
+      const dz = p.z - c.z;
+      if (Math.sqrt(dx * dx + dz * dz) < 1.8) {
+        tooClose = true;
+        break;
+      }
+    }
+
+    if (!tooClose) {
+      chosen.push({ x: p.x, z: p.z });
+    }
+
+    if (chosen.length >= count) break;
+  }
+
+  while (chosen.length < count) {
+    const p = CASTLE_VALID_SPAWNS[chosen.length % CASTLE_VALID_SPAWNS.length];
+    chosen.push({ x: p.x, z: p.z });
+  }
+
+  return chosen;
 }
 
 // =====================================================
@@ -1018,7 +1281,7 @@ function updateParticles(dt) {
 }
 
 // =====================================================
-// ESCENARIO
+// SCENARIO
 // =====================================================
 async function loadScenario() {
   try {
@@ -1211,6 +1474,8 @@ function buildButtons() {
     const btn = document.createElement("button");
     btn.innerHTML = `${label}<small>Tecla ${key.toUpperCase()}</small>`;
     btn.addEventListener("click", () => {
+      unlockAudio();
+
       if (key === BLOCK_KEY) {
         holdBlockRequested = true;
         if (!actionLocked || currentActionKey !== BLOCK_KEY) {
@@ -1238,7 +1503,7 @@ function buildButtons() {
 }
 
 // =====================================================
-// COLLISIONS PLAYER
+// PLAYER COLLISIONS
 // =====================================================
 function playerCollisions() {
   const result = worldOctree.capsuleIntersect(playerCollider);
@@ -1350,36 +1615,50 @@ function tryTranslateCapsule(moveDelta) {
   playerCollider.translate(moveDelta);
   let hit = worldOctree.capsuleIntersect(playerCollider);
 
-  if (hit) {
-    playerCollider.start.copy(oldStart);
-    playerCollider.end.copy(oldEnd);
+  if (!hit) return true;
 
-    playerCollider.translate(new THREE.Vector3(0, STEP_HEIGHT, 0));
-    playerCollider.translate(moveDelta);
+  playerCollider.start.copy(oldStart);
+  playerCollider.end.copy(oldEnd);
 
-    const stepHit = worldOctree.capsuleIntersect(playerCollider);
+  playerCollider.translate(new THREE.Vector3(0, STEP_HEIGHT, 0));
+  playerCollider.translate(moveDelta);
 
-    if (stepHit) {
-      playerCollider.start.copy(oldStart);
-      playerCollider.end.copy(oldEnd);
+  let stepHit = worldOctree.capsuleIntersect(playerCollider);
 
-      const slideNormal = hit.normal.clone();
-      const slide = moveDelta.clone().projectOnPlane(slideNormal);
-      playerCollider.translate(slide);
-
-      const slideHit = worldOctree.capsuleIntersect(playerCollider);
-      if (slideHit) {
-        playerCollider.start.copy(oldStart);
-        playerCollider.end.copy(oldEnd);
-        return false;
-      }
-    } else {
-      playerCollider.translate(new THREE.Vector3(0, -STEP_HEIGHT, 0));
-      playerCollisions();
-    }
+  if (!stepHit) {
+    playerCollider.translate(new THREE.Vector3(0, -STEP_HEIGHT, 0));
+    playerCollisions();
+    return true;
   }
 
-  return true;
+  playerCollider.start.copy(oldStart);
+  playerCollider.end.copy(oldEnd);
+
+  const slideNormal = hit.normal.clone();
+  const slide = moveDelta.clone().projectOnPlane(slideNormal);
+  playerCollider.translate(slide);
+
+  let slideHit = worldOctree.capsuleIntersect(playerCollider);
+
+  if (!slideHit) return true;
+
+  playerCollider.start.copy(oldStart);
+  playerCollider.end.copy(oldEnd);
+
+  playerCollider.translate(new THREE.Vector3(0, STEP_HEIGHT * 0.85, 0));
+  playerCollider.translate(slide);
+
+  const stepSlideHit = worldOctree.capsuleIntersect(playerCollider);
+
+  if (!stepSlideHit) {
+    playerCollider.translate(new THREE.Vector3(0, -STEP_HEIGHT * 0.85, 0));
+    playerCollisions();
+    return true;
+  }
+
+  playerCollider.start.copy(oldStart);
+  playerCollider.end.copy(oldEnd);
+  return false;
 }
 
 function movePlayerHorizontal(deltaTime) {
@@ -1490,23 +1769,23 @@ function damageEnemy(enemy, damage, knockbackDir) {
 
   enemy.life -= damage;
   enemy.hitCooldown = 0.3;
-  enemy.stunTimer = 0.24;
-  enemy.velocity.addScaledVector(knockbackDir, activeAttack?.knockback ?? 3.8);
-  enemy.velocity.y += 0.35;
+  enemy.stunTimer = enemy.isBoss ? 0.14 : 0.24;
+  enemy.velocity.addScaledVector(knockbackDir, enemy.isBoss ? 2.3 : (activeAttack?.knockback ?? 3.8));
+  enemy.velocity.y += enemy.isBoss ? 0.12 : 0.35;
 
   enemy.lifeBar.style.width = `${clamp((enemy.life / enemy.maxLife) * 100, 0, 100)}%`;
 
   const hitPos = getEnemyHitPoint(enemy);
-  spawnImpactParticles(hitPos, knockbackDir, willDie ? 26 : 18, willDie ? 1.25 : 1);
+  spawnImpactParticles(hitPos, knockbackDir, willDie ? 26 : 18, enemy.isBoss ? 1.25 : 1);
   triggerHitFlash();
   triggerCameraShake(willDie ? 0.16 : 0.11);
   registerCombo();
-  pulseEnemy(enemy);
+  pulseEnemy(enemy, enemy.isBoss ? 1.07 : 1.12);
   slowMotion(willDie ? 0.12 : 0.065, willDie ? 0.34 : 0.48);
 
   spawnDamageText(`-${damage}`, hitPos.clone().add(new THREE.Vector3(0, 0.6, 0)), willDie);
   playUISound("hit", willDie ? 0.45 : 0.32, 0.95 + Math.random() * 0.1);
-  addScore(activeAttack?.score ?? 10);
+  addScore((activeAttack?.score ?? 10) + (enemy.isBoss ? 15 : 0));
 
   if (willDie) {
     spawnFinisherBurst(hitPos, knockbackDir);
@@ -1522,11 +1801,12 @@ function damageEnemy(enemy, damage, knockbackDir) {
     if (enemy.actions.walk) enemy.actions.walk.stop();
     if (enemy.actions.attack1) enemy.actions.attack1.stop();
     if (enemy.actions.attack2) enemy.actions.attack2.stop();
+    if (enemy.actions.attack3) enemy.actions.attack3.stop();
 
     enemy.group.visible = false;
 
     registerKill();
-    addScore(100);
+    addScore(enemy.isBoss ? 1000 : 100);
 
     if (lockedEnemy === enemy) {
       lockedEnemy = null;
@@ -1537,6 +1817,7 @@ function damageEnemy(enemy, damage, knockbackDir) {
   }
 
   updateTargetHUD();
+  updateBossHUD();
 }
 
 function updateAttackTrails(dt) {
@@ -1590,19 +1871,20 @@ function updateAttackHits(dt) {
     const toEnemy = hitPoint.clone().sub(playerPos);
 
     const verticalDiff = Math.abs(toEnemy.y);
-    if (verticalDiff > 2.0) continue;
+    if (verticalDiff > 2.6) continue;
 
     const flatToEnemy = toEnemy.clone();
     flatToEnemy.y = 0;
 
     const dist = flatToEnemy.length();
-    const effectiveRange = activeAttack.range + ENEMY_RADIUS + 0.4;
+    const extraRange = enemy.isBoss ? 0.75 : 0.4;
+    const effectiveRange = activeAttack.range + (enemy.isBoss ? 0.65 : ENEMY_RADIUS) + extraRange;
     if (dist > effectiveRange || dist < 0.0001) continue;
 
     flatToEnemy.normalize();
     const angle = Math.acos(clamp(forward.dot(flatToEnemy), -1, 1));
 
-    const veryClose = dist < 1.6;
+    const veryClose = dist < (enemy.isBoss ? 2.1 : 1.6);
     const closeBonus = dist < 1.25 ? 1 : 0;
     const inCone = angle <= halfConeRad || veryClose;
 
@@ -1654,6 +1936,7 @@ function damagePlayer(amount) {
 
 function triggerDefeat() {
   game.inDefeat = true;
+  writeHighScore();
   showCenterMessage("PRESIONA T PARA REINICIAR", 3);
   defeatBanner.style.opacity = "1";
   defeatBanner.style.transform = "translate(-50%, -50%) scale(1)";
@@ -1664,12 +1947,18 @@ function resetGame() {
   game.kills = 0;
   game.wave = 1;
   game.inDefeat = false;
+  game.totalVictory = false;
+  game.bossSpawned = false;
+  game.bossDefeated = false;
   combatWon = false;
 
   victoryBanner.style.opacity = "0";
   victoryBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
   defeatBanner.style.opacity = "0";
   defeatBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
+  totalVictoryBanner.style.opacity = "0";
+  totalVictoryBanner.style.transform = "translate(-50%, -50%) scale(0.95)";
+  bossHUD.style.opacity = "0";
 
   comboCount = 0;
   comboTimer = 0;
@@ -1696,14 +1985,6 @@ function resetGame() {
 
   clearAllEnemies();
   startNextWave(true);
-}
-
-function clearAllEnemies() {
-  while (enemies.length > 0) {
-    const e = enemies.pop();
-    if (e.lifeWrap?.parentNode) e.lifeWrap.remove();
-    scene.remove(e.group);
-  }
 }
 
 // =====================================================
@@ -1774,22 +2055,43 @@ function toggleLockOn() {
 }
 
 // =====================================================
-// ENEMIES
+// ENEMY ASSETS
 // =====================================================
 async function loadEnemyAssets() {
-  setStatus("Cargando zombies...");
+  setStatus("Cargando zombies y boss...");
 
-  const [zombieBase, attackA, attackB] = await Promise.all([
+  const [
+    zombieBase,
+    zombieAttackA,
+    zombieAttackB,
+    bossBase,
+    bossAttackA,
+    bossAttackB,
+    bossAttackC
+  ] = await Promise.all([
     loadFBX(ENEMY_MODEL_FILE),
     loadFBX(ENEMY_ATTACK_FILE),
-    loadFBX(ENEMY_ATTACK_FILE_2)
+    loadFBX(ENEMY_ATTACK_FILE_2),
+
+    loadFBX(BOSS_MODEL_FILE),
+    loadFBX(BOSS_ATTACK_FILE_1),
+    loadFBX(BOSS_ATTACK_FILE_2),
+    loadFBX(BOSS_ATTACK_FILE_3)
   ]);
 
   enemyAssets.model = zombieBase;
-  enemyAssets.clips.idle = getFirstClip(zombieBase) || getFirstClip(attackB) || getFirstClip(attackA);
-  enemyAssets.clips.walk = getFirstClip(attackB) || getFirstClip(zombieBase) || getFirstClip(attackA);
-  enemyAssets.clips.attack1 = getFirstClip(attackA) || getFirstClip(attackB) || getFirstClip(zombieBase);
-  enemyAssets.clips.attack2 = getFirstClip(attackB) || getFirstClip(attackA) || getFirstClip(zombieBase);
+  enemyAssets.clips.idle = getFirstClip(zombieBase) || getFirstClip(zombieAttackB) || getFirstClip(zombieAttackA);
+  enemyAssets.clips.walk = getFirstClip(zombieAttackB) || getFirstClip(zombieBase) || getFirstClip(zombieAttackA);
+  enemyAssets.clips.attack1 = getFirstClip(zombieAttackA) || getFirstClip(zombieAttackB) || getFirstClip(zombieBase);
+  enemyAssets.clips.attack2 = getFirstClip(zombieAttackB) || getFirstClip(zombieAttackA) || getFirstClip(zombieBase);
+
+  enemyAssets.bossModel = bossBase;
+  enemyAssets.bossClips.idle = getFirstClip(bossBase) || getFirstClip(bossAttackA);
+  enemyAssets.bossClips.walk = getFirstClip(bossAttackC) || getFirstClip(bossBase) || getFirstClip(bossAttackA);
+  enemyAssets.bossClips.attack1 = getFirstClip(bossAttackA);
+  enemyAssets.bossClips.attack2 = getFirstClip(bossAttackB);
+  enemyAssets.bossClips.attack3 = getFirstClip(bossAttackC);
+
   enemyAssets.loaded = true;
 }
 
@@ -1803,9 +2105,9 @@ function playEnemyAction(enemy, key, fade = 0.15) {
   next.reset();
   next.enabled = true;
   next.setEffectiveWeight(1);
-  next.setEffectiveTimeScale(1);
+  next.setEffectiveTimeScale(enemy.isBoss ? 1.04 : 1);
 
-  if (key === "attack1" || key === "attack2") {
+  if (key === "attack1" || key === "attack2" || key === "attack3") {
     next.setLoop(THREE.LoopOnce, 1);
     next.clampWhenFinished = true;
   } else {
@@ -1839,26 +2141,40 @@ function createEnemyLifeUI() {
   return { lifeWrap, lifeBar };
 }
 
-function createEnemy(x, z, label = "Zombie") {
+function createEnemy(x, z, label = "Zombie", isBoss = false) {
   const group = new THREE.Group();
   scene.add(group);
 
-  const model = SkeletonUtils.clone(enemyAssets.model);
-  prepareEnemyVisual(model);
+  const sourceModel = isBoss ? enemyAssets.bossModel : enemyAssets.model;
+  const model = SkeletonUtils.clone(sourceModel);
+  prepareEnemyVisual(model, isBoss ? BOSS_SCALE : ENEMY_SCALE);
   group.add(model);
 
   const mixer = new THREE.AnimationMixer(model);
   const actions = {};
 
-  if (enemyAssets.clips.idle) actions.idle = mixer.clipAction(enemyAssets.clips.idle);
-  if (enemyAssets.clips.walk) actions.walk = mixer.clipAction(enemyAssets.clips.walk);
-  if (enemyAssets.clips.attack1) actions.attack1 = mixer.clipAction(enemyAssets.clips.attack1);
-  if (enemyAssets.clips.attack2) actions.attack2 = mixer.clipAction(enemyAssets.clips.attack2);
+  if (isBoss) {
+    if (enemyAssets.bossClips.idle) actions.idle = mixer.clipAction(enemyAssets.bossClips.idle);
+    if (enemyAssets.bossClips.walk) actions.walk = mixer.clipAction(enemyAssets.bossClips.walk);
+    if (enemyAssets.bossClips.attack1) actions.attack1 = mixer.clipAction(enemyAssets.bossClips.attack1);
+    if (enemyAssets.bossClips.attack2) actions.attack2 = mixer.clipAction(enemyAssets.bossClips.attack2);
+    if (enemyAssets.bossClips.attack3) actions.attack3 = mixer.clipAction(enemyAssets.bossClips.attack3);
+  } else {
+    if (enemyAssets.clips.idle) actions.idle = mixer.clipAction(enemyAssets.clips.idle);
+    if (enemyAssets.clips.walk) actions.walk = mixer.clipAction(enemyAssets.clips.walk);
+    if (enemyAssets.clips.attack1) actions.attack1 = mixer.clipAction(enemyAssets.clips.attack1);
+    if (enemyAssets.clips.attack2) actions.attack2 = mixer.clipAction(enemyAssets.clips.attack2);
+  }
 
   const ui = createEnemyLifeUI();
 
+  const lifeValue = isBoss ? BOSS_MAX_LIFE : 60 + (game.wave - 1) * 8;
+  const height = isBoss ? 2.65 : ENEMY_HEIGHT;
+  const radius = isBoss ? 0.50 : ENEMY_RADIUS;
+
   const enemy = {
     label,
+    isBoss,
     group,
     model,
     mixer,
@@ -1867,16 +2183,16 @@ function createEnemy(x, z, label = "Zombie") {
     currentActionKey: null,
 
     capsule: new Capsule(
-      new THREE.Vector3(x, ENEMY_RADIUS + 0.05, z),
-      new THREE.Vector3(x, ENEMY_HEIGHT + 0.05, z),
-      ENEMY_RADIUS
+      new THREE.Vector3(x, radius + 0.05, z),
+      new THREE.Vector3(x, height + 0.05, z),
+      radius
     ),
 
     velocity: new THREE.Vector3(),
     onFloor: false,
 
-    life: 60 + (game.wave - 1) * 8,
-    maxLife: 60 + (game.wave - 1) * 8,
+    life: lifeValue,
+    maxLife: lifeValue,
     dead: false,
     hitCooldown: 0,
     stunTimer: 0,
@@ -1886,12 +2202,19 @@ function createEnemy(x, z, label = "Zombie") {
     hitPulse: null,
 
     lifeWrap: ui.lifeWrap,
-    lifeBar: ui.lifeBar
+    lifeBar: ui.lifeBar,
+    height,
+    radius
   };
 
   mixer.addEventListener("finished", () => {
     if (enemy.dead) return;
-    if (enemy.currentActionKey === "attack1" || enemy.currentActionKey === "attack2") {
+
+    if (
+      enemy.currentActionKey === "attack1" ||
+      enemy.currentActionKey === "attack2" ||
+      enemy.currentActionKey === "attack3"
+    ) {
       enemy.attackTimer = 0;
       enemy.attackDidDamage = false;
       playEnemyAction(enemy, "idle");
@@ -1902,25 +2225,49 @@ function createEnemy(x, z, label = "Zombie") {
   return enemy;
 }
 
+function clearAllEnemies() {
+  while (enemies.length > 0) {
+    const e = enemies.pop();
+    if (e.lifeWrap?.parentNode) e.lifeWrap.remove();
+    scene.remove(e.group);
+  }
+}
+
 function startNextWave(skipBanner = false) {
   combatWon = false;
+  clearAllEnemies();
 
   const count = ENEMY_BASE_COUNT + (game.wave - 1);
-  const radius = 7 + Math.min(game.wave, 4);
-  const angleStep = (Math.PI * 2) / count;
+  const safeSpawns = getSafeWaveSpawnPoints(count);
 
   for (let i = 0; i < count; i++) {
-    const a = i * angleStep;
-    const x = Math.cos(a) * radius + (Math.random() - 0.5) * 1.5;
-    const z = Math.sin(a) * radius + (Math.random() - 0.5) * 1.5;
-    enemies.push(createEnemy(x, z, `Zombie ${i + 1}`));
+    const p = safeSpawns[i];
+    enemies.push(createEnemy(p.x, p.z, `Zombie ${i + 1}`));
   }
 
+  lockedEnemy = null;
   updateEnemyHUD();
+  updateLockHUD();
 
   if (!skipBanner) {
     showCenterMessage(`WAVE ${game.wave}`, 1.0);
   }
+}
+
+function startBossWave() {
+  combatWon = false;
+  clearAllEnemies();
+
+  const bossSpawn = { x: 0, z: 8.8 };
+  enemies.push(createEnemy(bossSpawn.x, bossSpawn.z, "PARASITE L", true));
+
+  lockedEnemy = null;
+  updateEnemyHUD();
+  updateLockHUD();
+  updateGameHUD();
+
+  showCenterMessage("BOSS WAVE", 1.2);
+  playUISound("boss", 0.45);
 }
 
 function enemyCollisions(enemy) {
@@ -1940,8 +2287,8 @@ function enemyCollisions(enemy) {
     enemy.capsule.translate(result.normal.multiplyScalar(result.depth));
   }
 
-  if (enemy.capsule.start.y < ENEMY_RADIUS + 0.03) {
-    const delta = (ENEMY_RADIUS + 0.03) - enemy.capsule.start.y;
+  if (enemy.capsule.start.y < enemy.radius + 0.03) {
+    const delta = (enemy.radius + 0.03) - enemy.capsule.start.y;
     enemy.capsule.start.y += delta;
     enemy.capsule.end.y += delta;
     enemy.onFloor = true;
@@ -1952,6 +2299,11 @@ function enemyCollisions(enemy) {
 function updateEnemyBillboards() {
   for (const enemy of enemies) {
     if (enemy.dead) continue;
+
+    if (enemy.isBoss) {
+      enemy.lifeWrap.style.display = "none";
+      continue;
+    }
 
     const pos = enemy.group.position.clone();
     pos.y += 2.05;
@@ -1969,10 +2321,12 @@ function updateEnemyBillboards() {
 }
 
 function applyEnemySeparation(enemy, dt) {
+  if (enemy.isBoss) return;
+
   const push = new THREE.Vector3();
 
   for (const other of enemies) {
-    if (other === enemy || other.dead) continue;
+    if (other === enemy || other.dead || other.isBoss) continue;
 
     tempVector.copy(enemy.group.position).sub(other.group.position);
     tempVector.y = 0;
@@ -1993,25 +2347,64 @@ function updateEnemyAttack(enemy, dt, distToPlayer) {
 
   enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
 
+  const attackRange = enemy.isBoss ? BOSS_ATTACK_RANGE : ENEMY_ATTACK_RANGE;
+  const damage = enemy.isBoss ? BOSS_DAMAGE : (ENEMY_CONTACT_DAMAGE + Math.floor((game.wave - 1) * 1.2));
+
   if (
-    distToPlayer <= ENEMY_ATTACK_RANGE &&
+    distToPlayer <= attackRange &&
     enemy.attackCooldown <= 0 &&
     enemy.currentActionKey !== "attack1" &&
     enemy.currentActionKey !== "attack2" &&
+    enemy.currentActionKey !== "attack3" &&
     enemy.stunTimer <= 0
   ) {
-    const attackKey = Math.random() > 0.5 ? "attack1" : "attack2";
+    let attackKey = "attack1";
+
+    if (enemy.isBoss) {
+      const roll = Math.random();
+      if (roll < 0.34) attackKey = "attack1";
+      else if (roll < 0.67) attackKey = "attack2";
+      else attackKey = "attack3";
+    } else {
+      attackKey = Math.random() > 0.5 ? "attack1" : "attack2";
+    }
+
     playEnemyAction(enemy, attackKey);
-    enemy.attackCooldown = ENEMY_ATTACK_COOLDOWN * Math.max(0.75, 1 - game.wave * 0.03);
+
+    enemy.attackCooldown = enemy.isBoss ? 1.15 : ENEMY_ATTACK_COOLDOWN * Math.max(0.75, 1 - game.wave * 0.03);
     enemy.attackTimer = 0;
     enemy.attackDidDamage = false;
   }
 
-  if (enemy.currentActionKey === "attack1" || enemy.currentActionKey === "attack2") {
+  if (
+    enemy.currentActionKey === "attack1" ||
+    enemy.currentActionKey === "attack2" ||
+    enemy.currentActionKey === "attack3"
+  ) {
     enemy.attackTimer += dt;
 
-    if (!enemy.attackDidDamage && enemy.attackTimer >= 0.45 && distToPlayer <= ENEMY_ATTACK_RANGE + 0.25) {
-      damagePlayer(ENEMY_CONTACT_DAMAGE + Math.floor((game.wave - 1) * 1.2));
+    let damageTime = 0.45;
+    let damageRange = attackRange + 0.25;
+    let finalDamage = damage;
+
+    if (enemy.isBoss) {
+      if (enemy.currentActionKey === "attack1") {
+        damageTime = 0.42;
+        damageRange = BOSS_ATTACK_RANGE + 0.35;
+        finalDamage = BOSS_DAMAGE;
+      } else if (enemy.currentActionKey === "attack2") {
+        damageTime = 0.62;
+        damageRange = BOSS_ATTACK_RANGE + 0.9;
+        finalDamage = BOSS_DAMAGE + 8;
+      } else if (enemy.currentActionKey === "attack3") {
+        damageTime = 0.36;
+        damageRange = BOSS_ATTACK_RANGE + 0.2;
+        finalDamage = BOSS_DAMAGE + 4;
+      }
+    }
+
+    if (!enemy.attackDidDamage && enemy.attackTimer >= damageTime && distToPlayer <= damageRange) {
+      damagePlayer(finalDamage);
       enemy.attackDidDamage = true;
     }
   }
@@ -2035,7 +2428,7 @@ function updateEnemyVisualEffects(enemy, dt) {
 }
 
 function updateEnemies(dt) {
-  if (!character || game.inDefeat) return;
+  if (!character || game.inDefeat || game.totalVictory) return;
 
   const playerPos = character.position.clone();
 
@@ -2061,19 +2454,25 @@ function updateEnemies(dt) {
       enemy.group.rotation.y = angle;
     }
 
-    const isAttacking = enemy.currentActionKey === "attack1" || enemy.currentActionKey === "attack2";
+    const isAttacking =
+      enemy.currentActionKey === "attack1" ||
+      enemy.currentActionKey === "attack2" ||
+      enemy.currentActionKey === "attack3";
+
+    const speed = enemy.isBoss ? BOSS_SPEED : (ENEMY_SPEED + game.wave * 0.04);
+    const attackRange = enemy.isBoss ? BOSS_ATTACK_RANGE : ENEMY_ATTACK_RANGE;
 
     if (enemy.stunTimer <= 0) {
-      if (!isAttacking && dist < ENEMY_DETECT_RANGE && dist > ENEMY_ATTACK_RANGE) {
-        enemy.velocity.addScaledVector(flat, (ENEMY_SPEED + game.wave * 0.04) * dt);
+      if (!isAttacking && dist < ENEMY_DETECT_RANGE && dist > attackRange) {
+        enemy.velocity.addScaledVector(flat, speed * dt);
 
-        if (Math.random() < 0.018) {
+        if (!enemy.isBoss && Math.random() < 0.018) {
           const strafe = new THREE.Vector3(-flat.z, 0, flat.x).normalize();
           enemy.velocity.addScaledVector(strafe, (Math.random() - 0.5) * 0.9);
         }
 
         playEnemyAction(enemy, "walk");
-      } else if (!isAttacking && dist <= ENEMY_ATTACK_RANGE) {
+      } else if (!isAttacking && dist <= attackRange) {
         playEnemyAction(enemy, "idle");
       } else if (!isAttacking && dist >= ENEMY_DETECT_RANGE) {
         playEnemyAction(enemy, "idle");
@@ -2084,8 +2483,8 @@ function updateEnemies(dt) {
 
     applyEnemySeparation(enemy, dt);
 
-    enemy.velocity.x *= enemy.onFloor ? 0.86 : 0.96;
-    enemy.velocity.z *= enemy.onFloor ? 0.86 : 0.96;
+    enemy.velocity.x *= enemy.onFloor ? (enemy.isBoss ? 0.9 : 0.86) : 0.96;
+    enemy.velocity.z *= enemy.onFloor ? (enemy.isBoss ? 0.9 : 0.86) : 0.96;
 
     const moveDelta = enemy.velocity.clone().multiplyScalar(dt);
     enemy.capsule.translate(moveDelta);
@@ -2095,21 +2494,22 @@ function updateEnemies(dt) {
     const center = getCapsuleCenter(enemy.capsule);
     enemy.group.position.set(
       center.x,
-      enemy.capsule.start.y - ENEMY_RADIUS - 0.03,
+      enemy.capsule.start.y - enemy.radius - 0.03,
       center.z
     );
 
     updateEnemyVisualEffects(enemy, dt);
 
     if (enemy.group.position.y < ENEMY_FALL_LIMIT_Y) {
-      enemy.capsule.start.set(0, ENEMY_RADIUS + 0.05, 0);
-      enemy.capsule.end.set(0, ENEMY_HEIGHT + 0.05, 0);
+      enemy.capsule.start.set(0, enemy.radius + 0.05, 0);
+      enemy.capsule.end.set(0, enemy.height + 0.05, 0);
       enemy.velocity.set(0, 0, 0);
     }
   }
 
   updateEnemyBillboards();
   updateTargetHUD();
+  updateBossHUD();
 }
 
 // =====================================================
@@ -2208,8 +2608,18 @@ function updateFootsteps(dt, moving, sprinting) {
   }
 }
 
+function togglePause() {
+  if (!gameStarted || game.inDefeat || game.totalVictory) return;
+  gamePaused = !gamePaused;
+  pauseOverlay.style.display = gamePaused ? "flex" : "none";
+}
+
 function updatePlayer(deltaTime) {
   if (!character) return;
+
+  if (consumePressed("p")) {
+    togglePause();
+  }
 
   if (lockedEnemy && lockedEnemy.dead) {
     lockedEnemy = null;
@@ -2229,7 +2639,7 @@ function updatePlayer(deltaTime) {
     return;
   }
 
-  if (game.inDefeat) return;
+  if (game.inDefeat || game.totalVictory) return;
 
   player.invulTime = Math.max(0, player.invulTime - deltaTime);
   updateStamina(deltaTime);
@@ -2370,7 +2780,7 @@ function updateThirdPersonCamera(dt) {
   let desiredHeight = CAMERA_NORMAL_HEIGHT;
 
   const nearestEnemyDist = getNearestAliveEnemyDistance();
-  const nearCombat = nearestEnemyDist < 5.5;
+  const nearCombat = nearestEnemyDist < 7;
 
   if (lockedEnemy && !lockedEnemy.dead) {
     forward = lockedEnemy.group.position.clone().sub(charPos);
@@ -2378,10 +2788,10 @@ function updateThirdPersonCamera(dt) {
     if (forward.lengthSq() < 0.0001) forward.set(0, 0, 1);
     else forward.normalize();
 
-    desiredDistance = CAMERA_LOCK_DISTANCE;
-    desiredHeight = CAMERA_LOCK_HEIGHT;
+    desiredDistance = lockedEnemy.isBoss ? 5.0 : CAMERA_LOCK_DISTANCE;
+    desiredHeight = lockedEnemy.isBoss ? 2.0 : CAMERA_LOCK_HEIGHT;
 
-    const mid = charPos.clone().lerp(lockedEnemy.group.position, 0.38);
+    const mid = charPos.clone().lerp(lockedEnemy.group.position, lockedEnemy.isBoss ? 0.28 : 0.38);
     cameraTarget.set(mid.x, charPos.y + CAMERA_HEIGHT, mid.z);
   } else {
     forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.quaternion).normalize();
@@ -2442,7 +2852,7 @@ function updateCameraKeyboard(dt) {
 }
 
 // =====================================================
-// ENVIRONMENT KEYS
+// KEYS
 // =====================================================
 function handleEnvironmentKeys(e) {
   switch (e.key.toLowerCase()) {
@@ -2515,6 +2925,7 @@ async function loadPlayerAndAnimations() {
 // =====================================================
 async function init() {
   buildButtons();
+  game.highScore = readHighScore();
   updatePlayerHUD();
   updateGameHUD();
   updateLockHUD();
@@ -2545,7 +2956,7 @@ async function init() {
     const err = error?.err || error;
 
     showError(
-      `No se pudieron cargar los archivos del zombie.\nArchivo: ${url || "desconocido"}\n\n` +
+      `No se pudieron cargar los archivos del zombie/boss.\nArchivo: ${url || "desconocido"}\n\n` +
       `Error: ${err?.message || err}`
     );
     throw err;
@@ -2556,7 +2967,6 @@ async function init() {
   playerCollider.start.set(0, PLAYER_RADIUS + 0.05, 0);
   playerCollider.end.set(0, PLAYER_HEIGHT + 0.05, 0);
 
-  startNextWave(true);
   playAnimation(IDLE_KEY, 0.01, true);
 
   window.addEventListener("keydown", (e) => {
@@ -2584,6 +2994,15 @@ async function init() {
     }
   });
 
+  $startGameBtn.addEventListener("click", () => {
+    unlockAudio();
+    if (gameStarted) return;
+    gameStarted = true;
+    startScreen.style.display = "none";
+    startNextWave(true);
+    showCenterMessage("COMIENZA LA BATALLA", 1.0);
+  });
+
   animate();
 }
 
@@ -2592,6 +3011,13 @@ function animate() {
 
   const dtUnscaled = Math.min(clock.getDelta(), 0.05);
   updateTimeScale(dtUnscaled);
+
+  if (!gameStarted || gamePaused) {
+    controls.update();
+    renderer.render(scene, camera);
+    return;
+  }
+
   const deltaTime = dtUnscaled * globalTimeScale;
 
   if (mixer) mixer.update(deltaTime);
