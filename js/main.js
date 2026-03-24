@@ -312,19 +312,19 @@ const $bossLifeText = document.getElementById("bossLifeText");
 // =====================================================
 // CONFIG
 // =====================================================
-const BASE_CHARACTER = "assets/models/Paladin WProp J Nordstrom.fbx";
+const BASE_CHARACTER = "assets/models/Paladin.fbx";
 const SCENARIO_FILE = "assets/scenarios/castle/scene.gltf";
 const COLLISION_FILE = "assets/models/collision-world.glb";
 
 const ENEMY_MODEL_FILE = "assets/models/enemies/Ch10_nonPBR.fbx";
-const ENEMY_ATTACK_FILE = "assets/models/enemies/Zombie Attack.fbx";
-const ENEMY_ATTACK_FILE_2 = "assets/models/enemies/Zombie Punching.fbx";
+const ENEMY_ATTACK_FILE = "assets/models/enemies/ZAttack.fbx";
+const ENEMY_ATTACK_FILE_2 = "assets/models/enemies/Punching.fbx";
 
 // BOSS REAL
-const BOSS_MODEL_FILE = "assets/models/boss/Parasite L Starkie.fbx";
-const BOSS_ATTACK_FILE_1 = "assets/models/boss/Mutant Swiping.fbx";
-const BOSS_ATTACK_FILE_2 = "assets/models/boss/Jump Attack.fbx";
-const BOSS_ATTACK_FILE_3 = "assets/models/boss/Mutant Punch.fbx";
+const BOSS_MODEL_FILE = "assets/models/boss/Parasite.fbx";
+const BOSS_ATTACK_FILE_1 = "assets/models/boss/Swiping.fbx";
+const BOSS_ATTACK_FILE_2 = "assets/models/boss/JAttack.fbx";
+const BOSS_ATTACK_FILE_3 = "assets/models/boss/MPunch.fbx";
 
 const AUDIO_FILES = {
   hit: "assets/audio/hit.wav",
@@ -341,19 +341,19 @@ const AUDIO_FILES = {
 const ANIMS = [
   { key: "idle", name: "Idle", file: "assets/models/Idle.fbx", type: "idle" },
   { key: "walk", name: "Walk", file: "assets/models/Walking.fbx", type: "walk" },
-  { key: "run", name: "Run", file: "assets/models/Unarmed Run Forward.fbx", type: "run" },
-  { key: "jump", name: "Jump", file: "assets/models/Jumping Up.fbx", type: "jump" },
+  { key: "run", name: "Run", file: "assets/models/Run.fbx", type: "run" },
+  { key: "jump", name: "Jump", file: "assets/models/Jumping.fbx", type: "jump" },
 
-  { key: "1", name: "Attack 1", file: "assets/models/Great Sword Slash.fbx", type: "attack", damage: 20, range: 2.7, hitStart: 0.13, hitEnd: 0.64, staminaCost: 10, coneDeg: 100, knockback: 4.2, trailSize: 1.05, score: 25 },
-  { key: "2", name: "Attack 2", file: "assets/models/Sword And Shield Attack Bitch.fbx", type: "attack", damage: 18, range: 2.48, hitStart: 0.11, hitEnd: 0.58, staminaCost: 9, coneDeg: 96, knockback: 3.85, trailSize: 0.95, score: 22 },
-  { key: "3", name: "Attack 3", file: "assets/models/Great Sword Jump Attack.fbx", type: "attack", damage: 12, range: 2.24, hitStart: 0.04, hitEnd: 0.36, staminaCost: 8, coneDeg: 120, knockback: 3.25, trailSize: 0.9, score: 18 },
-  { key: "4", name: "Attack 4", file: "assets/models/Sword And Shield Slash.fbx", type: "attack", damage: 16, range: 2.38, hitStart: 0.07, hitEnd: 0.50, staminaCost: 9, coneDeg: 110, knockback: 3.65, trailSize: 0.95, score: 20 },
-  { key: "5", name: "Attack 5", file: "assets/models/Great Sword Strafe.fbx", type: "attack", damage: 15, range: 2.34, hitStart: 0.10, hitEnd: 0.52, staminaCost: 9, coneDeg: 108, knockback: 3.45, trailSize: 0.95, score: 20 },
-  { key: "6", name: "Attack 6", file: "assets/models/Sword and Shield Kick.fbx", type: "attack", damage: 24, range: 2.82, hitStart: 0.16, hitEnd: 0.68, staminaCost: 12, coneDeg: 92, knockback: 5.0, trailSize: 1.12, score: 30 },
+  { key: "1", name: "Attack 1", file: "assets/models/Attack1.fbx", type: "attack", damage: 20, range: 2.7, hitStart: 0.13, hitEnd: 0.64, staminaCost: 10, coneDeg: 100, knockback: 4.2, trailSize: 1.05, score: 25 },
+  { key: "2", name: "Attack 2", file: "assets/models/Attack2.fbx", type: "attack", damage: 18, range: 2.48, hitStart: 0.11, hitEnd: 0.58, staminaCost: 9, coneDeg: 96, knockback: 3.85, trailSize: 0.95, score: 22 },
+  { key: "3", name: "Attack 3", file: "assets/models/Attack3.fbx", type: "attack", damage: 12, range: 2.24, hitStart: 0.04, hitEnd: 0.36, staminaCost: 8, coneDeg: 120, knockback: 3.25, trailSize: 0.9, score: 18 },
+  { key: "4", name: "Attack 4", file: "assets/models/Attack4.fbx", type: "attack", damage: 16, range: 2.38, hitStart: 0.07, hitEnd: 0.50, staminaCost: 9, coneDeg: 110, knockback: 3.65, trailSize: 0.95, score: 20 },
+  { key: "5", name: "Attack 5", file: "assets/models/Attack5.fbx", type: "attack", damage: 15, range: 2.34, hitStart: 0.10, hitEnd: 0.52, staminaCost: 9, coneDeg: 108, knockback: 3.45, trailSize: 0.95, score: 20 },
+  { key: "6", name: "Attack 6", file: "assets/models/Attack6.fbx", type: "attack", damage: 24, range: 2.82, hitStart: 0.16, hitEnd: 0.68, staminaCost: 12, coneDeg: 92, knockback: 5.0, trailSize: 1.12, score: 30 },
 
-  { key: "7", name: "Block", file: "assets/models/Sword And Shield Crouch Block Idle.fbx", type: "blockHold" },
-  { key: "f", name: "Quick Attack", file: "assets/models/Great Sword Crouching.fbx", type: "quickAttack", damage: 14, range: 2.18, hitStart: 0.04, hitEnd: 0.34, staminaCost: 7, coneDeg: 130, knockback: 3.0, trailSize: 0.82, score: 15 },
-  { key: "v", name: "Dodge", file: "assets/models/Standing Dodge Backward.fbx", type: "dodge", staminaCost: 14, duration: 0.42, iframeStart: 0.06, iframeEnd: 0.26, speed: 9.5 }
+  { key: "7", name: "Block", file: "assets/models/Block.fbx", type: "blockHold" },
+  { key: "f", name: "Quick Attack", file: "assets/models/Attack.fbx", type: "quickAttack", damage: 14, range: 2.18, hitStart: 0.04, hitEnd: 0.34, staminaCost: 7, coneDeg: 130, knockback: 3.0, trailSize: 0.82, score: 15 },
+  { key: "v", name: "Dodge", file: "assets/models/Dodge.fbx", type: "dodge", staminaCost: 14, duration: 0.42, iframeStart: 0.06, iframeEnd: 0.26, speed: 9.5 }
 ];
 
 const IDLE_KEY = "idle";
