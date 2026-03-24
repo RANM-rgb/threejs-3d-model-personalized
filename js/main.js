@@ -316,9 +316,9 @@ const BASE_CHARACTER = "assets/models/Paladin.fbx";
 const SCENARIO_FILE = "assets/scenarios/castle/scene.gltf";
 const COLLISION_FILE = "assets/models/collision-world.glb";
 
-const ENEMY_MODEL_FILE = "assets/models/enemies/Ch10_nonPBR.fbx";
-const ENEMY_ATTACK_FILE = "assets/models/enemies/ZAttack.fbx";
-const ENEMY_ATTACK_FILE_2 = "assets/models/enemies/Punching.fbx";
+const ENEMY_MODEL_FILE = "assets/models/enemies/Zombie.fbx";
+const ENEMY_ATTACK_FILE = "assets/models/enemies/ZombieAttack.fbx";
+const ENEMY_ATTACK_FILE_2 = "assets/models/enemies/ZombiePunch.fbx";
 
 // BOSS REAL
 const BOSS_MODEL_FILE = "assets/models/boss/Parasite.fbx";
