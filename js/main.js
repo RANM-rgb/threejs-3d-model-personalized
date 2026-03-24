@@ -327,15 +327,15 @@ const BOSS_ATTACK_FILE_2 = "assets/models/boss/JAttack.fbx";
 const BOSS_ATTACK_FILE_3 = "assets/models/boss/MPunch.fbx";
 
 const AUDIO_FILES = {
-  hit: "assets/audio/hit.wav",
+  hit: "assets/audio/punch.wav",
   block: "assets/audio/block.wav",
-  death: "assets/audio/death.wav",
-  step1: "assets/audio/step1.wav",
+  death: "assets/audio/dying.wav",
+  step1: "assets/audio/footsteps.wav",
   step2: "assets/audio/step2.wav",
   dodge: "assets/audio/dodge.wav",
   victory: "assets/audio/victory.wav",
   switch: "assets/audio/switch.wav",
-  boss: "assets/audio/boss.wav"
+  boss: "assets/audio/growl.wav"
 };
 
 const ANIMS = [
@@ -524,16 +524,197 @@ const gltfLoader = new GLTFLoader();
 const listener = new THREE.AudioListener();
 camera.add(listener);
 
+const BACKGROUND_MUSIC_FILE = "assets/audio/deuslower-atmosphere-dark-fantasy-dungeon-synth-248210.mp3";
+
+let bgMusic = null;
+
 const audioLoader = new THREE.AudioLoader();
 const audioBuffers = {};
-const unlockedAudio = { ok: false };
+
+const audioState = {
+  unlocked: false,
+  musicEnabled: true,
+  sfxEnabled: true,
+  musicVolume: 0.35,
+  sfxVolume: 0.4,
+  bgReady: false
+};
+
+function createAudioButtonBase() {
+  const btn = document.createElement("button");
+  btn.style.position = "fixed";
+  btn.style.right = "12px";
+  btn.style.padding = "10px 14px";
+  btn.style.border = "none";
+  btn.style.borderRadius = "999px";
+  btn.style.background = "rgba(10,16,30,.86)";
+  btn.style.color = "#fff";
+  btn.style.fontFamily = "Arial, sans-serif";
+  btn.style.fontWeight = "700";
+  btn.style.cursor = "pointer";
+  btn.style.zIndex = "2100";
+  btn.style.boxShadow = "0 8px 24px rgba(0,0,0,.35)";
+  btn.style.backdropFilter = "blur(6px)";
+  return btn;
+}
+
+const musicToggleBtn = createAudioButtonBase();
+musicToggleBtn.style.top = "12px";
+musicToggleBtn.textContent = "🎵 Música: ON";
+document.body.appendChild(musicToggleBtn);
+
+const sfxToggleBtn = createAudioButtonBase();
+sfxToggleBtn.style.top = "58px";
+sfxToggleBtn.textContent = "🔊 SFX: ON";
+document.body.appendChild(sfxToggleBtn);
+
+function updateAudioButtons() {
+  musicToggleBtn.textContent = `🎵 Música: ${audioState.musicEnabled ? "ON" : "OFF"}`;
+  sfxToggleBtn.textContent = `🔊 SFX: ${audioState.sfxEnabled ? "ON" : "OFF"}`;
+}
+
+function initBackgroundMusic() {
+  return new Promise((resolve) => {
+    bgMusic = new THREE.Audio(listener);
+
+    audioLoader.load(
+      BACKGROUND_MUSIC_FILE,
+      (buffer) => {
+        bgMusic.setBuffer(buffer);
+        bgMusic.setLoop(true);
+        bgMusic.setVolume(audioState.musicVolume);
+        audioState.bgReady = true;
+        resolve();
+      },
+      undefined,
+      (err) => {
+        console.warn("No se pudo cargar la música de fondo:", err);
+        audioState.bgReady = false;
+        resolve();
+      }
+    );
+  });
+}
 
 function unlockAudio() {
-  if (unlockedAudio.ok) return;
-  unlockedAudio.ok = true;
+  if (audioState.unlocked) return;
+  audioState.unlocked = true;
+
+  try {
+    const ctx = listener.context;
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+  } catch {}
+
+  if (gameStarted && !gamePaused && audioState.musicEnabled) {
+    playBackgroundMusic();
+  }
 }
+
+function playBackgroundMusic() {
+  if (!audioState.unlocked) return;
+  if (!audioState.musicEnabled) return;
+  if (!bgMusic) return;
+  if (!audioState.bgReady) return;
+
+  try {
+    const ctx = listener.context;
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().then(() => {
+        if (!bgMusic.isPlaying) {
+          bgMusic.setVolume(audioState.musicVolume);
+          bgMusic.play();
+        }
+      }).catch(() => {});
+      return;
+    }
+
+    if (!bgMusic.isPlaying) {
+      bgMusic.setVolume(audioState.musicVolume);
+      bgMusic.play();
+    }
+  } catch (err) {
+    console.warn("No se pudo reproducir la música de fondo:", err);
+  }
+}
+
+function pauseBackgroundMusic() {
+  if (!bgMusic) return;
+
+  try {
+    if (bgMusic.isPlaying) {
+      bgMusic.pause();
+    }
+  } catch (err) {
+    console.warn("No se pudo pausar la música de fondo:", err);
+  }
+}
+
+function stopBackgroundMusic() {
+  if (!bgMusic) return;
+
+  try {
+    if (bgMusic.isPlaying) {
+      bgMusic.stop();
+    }
+  } catch (err) {
+    console.warn("No se pudo detener la música de fondo:", err);
+  }
+}
+
+function toggleMusic() {
+  audioState.musicEnabled = !audioState.musicEnabled;
+  updateAudioButtons();
+
+  if (!audioState.musicEnabled) {
+    pauseBackgroundMusic();
+    showCenterMessage("MÚSICA OFF", 0.45);
+  } else {
+    unlockAudio();
+    if (gameStarted && !gamePaused) {
+      playBackgroundMusic();
+    }
+    showCenterMessage("MÚSICA ON", 0.45);
+  }
+}
+
+function toggleSfx() {
+  audioState.sfxEnabled = !audioState.sfxEnabled;
+  updateAudioButtons();
+  showCenterMessage(audioState.sfxEnabled ? "SFX ON" : "SFX OFF", 0.45);
+}
+
+musicToggleBtn.addEventListener("click", () => {
+  unlockAudio();
+  toggleMusic();
+});
+
+sfxToggleBtn.addEventListener("click", () => {
+  unlockAudio();
+  toggleSfx();
+});
+
 window.addEventListener("pointerdown", unlockAudio, { once: true });
 window.addEventListener("keydown", unlockAudio, { once: true });
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    pauseBackgroundMusic();
+  } else if (!gamePaused && gameStarted && audioState.musicEnabled) {
+    playBackgroundMusic();
+  }
+});
+
+window.addEventListener("blur", () => {
+  pauseBackgroundMusic();
+});
+
+window.addEventListener("focus", () => {
+  if (!gamePaused && gameStarted && audioState.musicEnabled) {
+    playBackgroundMusic();
+  }
+});
 
 function loadAudioBuffer(name, path) {
   return new Promise((resolve) => {
@@ -550,24 +731,34 @@ function loadAudioBuffer(name, path) {
 }
 
 async function loadAudioAssets() {
-  const tasks = Object.entries(AUDIO_FILES).map(([name, path]) => loadAudioBuffer(name, path));
+  const tasks = Object.entries(AUDIO_FILES).map(([name, path]) =>
+    loadAudioBuffer(name, path)
+  );
   await Promise.all(tasks);
 }
 
 function playUISound(name, volume = 0.4, playbackRate = 1) {
-  if (!unlockedAudio.ok) return;
+  if (!audioState.unlocked) return;
+  if (!audioState.sfxEnabled) return;
+
   const buffer = audioBuffers[name];
   if (!buffer) return;
 
-  const sound = new THREE.Audio(listener);
-  sound.setBuffer(buffer);
-  sound.setVolume(volume);
-  sound.setPlaybackRate(playbackRate);
-  sound.play();
+  try {
+    const sound = new THREE.Audio(listener);
+    sound.setBuffer(buffer);
+    sound.setVolume(volume * audioState.sfxVolume);
+    sound.setPlaybackRate(playbackRate);
+    sound.play();
 
-  setTimeout(() => {
-    try { sound.stop(); } catch {}
-  }, Math.ceil((buffer.duration || 1) * 1000) + 120);
+    setTimeout(() => {
+      try {
+        sound.stop();
+      } catch {}
+    }, Math.ceil((buffer.duration || 1) * 1000) + 120);
+  } catch (err) {
+    console.warn(`No se pudo reproducir el sonido ${name}:`, err);
+  }
 }
 
 // =====================================================
@@ -2919,6 +3110,7 @@ async function loadPlayerAndAnimations() {
     actions.set(meta.key, { action, meta });
   }
 }
+
 
 // =====================================================
 // INIT
