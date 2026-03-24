@@ -191,7 +191,7 @@ http://localhost:3000
 
 ## 👨‍💻 Autor
 
-**Jennifer Paola Verde Espitia**
+**Rodrigo Axel Noeggerath Medina**
 Ingeniería en Tecnologías de la Información y Comunicaciones (ITICS)
 
 ---
